@@ -5,8 +5,6 @@ import ballerina.io;
 import org.wso2.model;
 
 sql:ClientConnector patchMetricDBConn = create sql:ClientConnector( sql:DB. MYSQL, "localhost", 3306, "patch_metrics_db?useSSL=false", "root", "password123", {maximumPoolSize:5});
-//sql:ClientConnector sqlConn = create sql:ClientConnector(sql:DB.MYSQL, "localhost", 3306, "pmtdb?useSSL=false", "root", "password123", {maximumPoolSize:5});
-
 
 public function insertPatchInfo(model:PatchInfo[] patchInfoList)(int[]) {
 
@@ -23,15 +21,11 @@ public function insertPatchInfo(model:PatchInfo[] patchInfoList)(int[]) {
     }
 
     int[] res = patchMetricsDB.batchUpdate("INSERT INTO PATCH_INFO (ID,PATCH_NAME) VALUES (?,?)", patchInfoParams);
-    //io:print("Inserted row count:");
-   // io:println(res);
-
-//table dt = pmtDB.select("SELECT ID, SVN_GIT_PUBLIC, SVN_GIT_SUPPORT FROM PATCH_ETA WHERE ID >= ?", params, typeof PatchETA);
-// INSERT INTO STUDENT (AGE,NAME) VALUES (?,?)
 
    return res;
 
 }
+
 
 public function getLastPatchInfoId()(int) {
     endpoint <sql:ClientConnector> patchMetricsDB {
@@ -39,7 +33,7 @@ public function getLastPatchInfoId()(int) {
     }
 
     table dt = patchMetricsDB.select("SELECT ID FROM PATCH_INFO ORDER BY ID DESC LIMIT 1", null, typeof model:PatchInfo);
-// SELECT ID FROM PATCH_INFO ORDER BY ID DESC LIMIT 1;
+
     if (dt.hasNext()) {
         var rs, _ = (model:PatchInfo)dt.getNext();
         io:println(rs.ID);
@@ -69,9 +63,6 @@ public function insertGithubCommitInfo(model:GithubCommitInfo[] githubCommitInfo
         githubCommitInfoParams[lengthof githubCommitInfoParams] = params;
     }
 
-
-   // params = [patchIdParam, githubSHAIdParam, githubSHAIdRepoTypeParam, totalChangesParam, totalChangesParam, additionsParam, deletionsParam, isUpdatedParam];
-
     int[] res = patchMetricsDB.batchUpdate("INSERT INTO GITHUB_COMMIT_INFO (PATCH_INFO_ID,GITHUB_SHA_ID,GITHUB_SHA_ID_REPO_TYPE,TOTAL_CHANGES,ADDITIONS,DELETIONS,IS_UPDATED) VALUES (?,?,?,?,?,?,?)", githubCommitInfoParams);
 
     return res;
@@ -85,8 +76,8 @@ public function getIncompleteGithubCommitInfo()(model:GithubCommitInfo[]) {
     }
 
     table dt = patchMetricsDB.select("SELECT PATCH_INFO_ID,GITHUB_SHA_ID,GITHUB_SHA_ID_REPO_TYPE,TOTAL_CHANGES,ADDITIONS,DELETIONS,IS_UPDATED FROM GITHUB_COMMIT_INFO WHERE IS_UPDATED = 0 ORDER BY PATCH_INFO_ID LIMIT 30", null, typeof model:GithubCommitInfo);
-// SELECT ID FROM PATCH_INFO ORDER BY ID DESC LIMIT 1;
     model:GithubCommitInfo[] githubCommitInfoList = [];
+
     while (dt.hasNext()) {
         var rs,_ = (model:GithubCommitInfo)dt.getNext();
         githubCommitInfoList[lengthof githubCommitInfoList] = rs;
@@ -102,8 +93,8 @@ public function getIncompletePublicGithubCommitInfo()(model:GithubCommitInfo[]) 
     }
 
     table dt = patchMetricsDB.select("SELECT PATCH_INFO_ID,GITHUB_SHA_ID,GITHUB_SHA_ID_REPO_TYPE,TOTAL_CHANGES,ADDITIONS,DELETIONS,IS_UPDATED FROM GITHUB_COMMIT_INFO WHERE IS_UPDATED = 0 ORDER BY PATCH_INFO_ID", null, typeof model:GithubCommitInfo);
-    // SELECT ID FROM PATCH_INFO ORDER BY ID DESC LIMIT 1;
     model:GithubCommitInfo[] githubCommitInfoList = [];
+
     while (dt.hasNext()) {
         var rs,_ = (model:GithubCommitInfo)dt.getNext();
         githubCommitInfoList[lengthof githubCommitInfoList] = rs;
@@ -129,6 +120,7 @@ public function getIncompleteSupportGithubCommitInfo()(model:GithubCommitInfo[])
     return githubCommitInfoList;
 }
 
+
 public function getFileInfo(string filename)(model:FileInfo) {
     endpoint <sql:ClientConnector> patchMetricsDB {
         patchMetricDBConn;
@@ -137,7 +129,7 @@ public function getFileInfo(string filename)(model:FileInfo) {
     sql:Parameter fileNameParam = {sqlType:sql:Type.VARCHAR, value:filename};
     sql:Parameter[] params = [fileNameParam];
     table dt = patchMetricsDB.select("SELECT * FROM FILE_INFO WHERE FILE_NAME = ?", params, typeof model:FileInfo);
-// SELECT ID FROM PATCH_INFO ORDER BY ID DESC LIMIT 1;
+
     if (dt.hasNext()) {
         var rs,_ = (model:FileInfo)dt.getNext();
         dt.close();
@@ -158,7 +150,7 @@ public function insertGithubCommitFileInfo(model:CommitFileInfo[] commitFileInfo
     foreach commitFileInfo in commitFileInfoList {
         sql:Parameter patchIdParam = {sqlType:sql:Type.INTEGER, value:commitFileInfo.GITHUB_COMMIT_INFO_PATCH_INFO_ID};
         sql:Parameter githubCommitSHAIdParam = {sqlType:sql:Type.VARCHAR, value:commitFileInfo.GITHUB_COMMIT_INFO_GITHUB_SHA_ID};
-        sql:Parameter fileSHAIdParam = {sqlType:sql:Type.VARCHAR, value:commitFileInfo.FILE_INFO_GITHUB_SHA_ID};
+        sql:Parameter fileSHAIdParam = {sqlType:sql:Type.INTEGER, value:commitFileInfo.FILE_INFO_ID};
         sql:Parameter totalChangesParam = {sqlType:sql:Type.INTEGER, value:commitFileInfo.TOTAL_CHANGES};
         sql:Parameter additionsParam = {sqlType:sql:Type.INTEGER, value:commitFileInfo.ADDITIONS};
         sql:Parameter deletionsParam = {sqlType:sql:Type.INTEGER, value:commitFileInfo.DELETIONS};
@@ -166,10 +158,7 @@ public function insertGithubCommitFileInfo(model:CommitFileInfo[] commitFileInfo
         commitFileInfoParams[lengthof commitFileInfoParams] = params;
     }
 
-
-// params = [patchIdParam, githubSHAIdParam, githubSHAIdRepoTypeParam, totalChangesParam, totalChangesParam, additionsParam, deletionsParam, isUpdatedParam];
-
-    int[] res = patchMetricsDB.batchUpdate("INSERT INTO PATCH_INFO_has_FILE_INFO (GITHUB_COMMIT_INFO_PATCH_INFO_ID,GITHUB_COMMIT_INFO_GITHUB_SHA_ID,FILE_INFO_GITHUB_SHA_ID,TOTAL_CHANGES,ADDITIONS,DELETIONS) VALUES (?,?,?,?,?,?)", commitFileInfoParams);
+    int[] res = patchMetricsDB.batchUpdate("INSERT INTO PATCH_INFO_has_FILE_INFO (GITHUB_COMMIT_INFO_PATCH_INFO_ID,GITHUB_COMMIT_INFO_GITHUB_SHA_ID,FILE_INFO_ID,TOTAL_CHANGES,ADDITIONS,DELETIONS) VALUES (?,?,?,?,?,?)", commitFileInfoParams);
 
     return res;
 
@@ -197,9 +186,6 @@ public function updateGithubCommitInfo(model:GithubCommitInfo[] githubCommitInfo
 
 }
 
-//
-// UPDATE GITHUB_COMMIT_INFO SET TOTAL_CHANGES = ?, ADDITIONS = ?, DELETIONS= ?, IS_UPDATED = ? WHERE GITHUB_SHA_ID = ?
-//WHERE condition;
 
 public function insertFileInfo(model:FileInfo [] fileInfoList)(int[]) {
 
@@ -209,19 +195,33 @@ public function insertFileInfo(model:FileInfo [] fileInfoList)(int[]) {
 
     sql:Parameter[][]  fileInfoParams = [];
     foreach file in fileInfoList {
-        sql:Parameter fileSHAIdParam = {sqlType:sql:Type.VARCHAR, value:file.GITHUB_SHA_ID};
+        sql:Parameter fileSHAIdParam = {sqlType:sql:Type.INTEGER, value:file.ID};
         sql:Parameter fileNameParam = {sqlType:sql:Type.VARCHAR, value:file.FILE_NAME};
         sql:Parameter[] params = [fileSHAIdParam, fileNameParam];
         fileInfoParams[lengthof fileInfoParams] = params;
     }
 
-
-    // params = [patchIdParam, githubSHAIdParam, githubSHAIdRepoTypeParam, totalChangesParam, totalChangesParam, additionsParam, deletionsParam, isUpdatedParam];
-
-    int[] res = patchMetricsDB.batchUpdate("INSERT INTO FILE_INFO (GITHUB_SHA_ID,FILE_NAME) VALUES (?,?)", fileInfoParams);
+    int[] res = patchMetricsDB.batchUpdate("INSERT INTO FILE_INFO (ID,FILE_NAME) VALUES (?,?)", fileInfoParams);
 
     return res;
 
+}
+
+public function getLastFileId()(int) {
+    endpoint <sql:ClientConnector> patchMetricsDB {
+        patchMetricDBConn;
+    }
+
+    table dt = patchMetricsDB.select("SELECT ID FROM FILE_INFO ORDER BY ID DESC LIMIT 1", null, typeof model:FileInfo);
+
+    if (dt.hasNext()) {
+        var rs, _ = (model:FileInfo)dt.getNext();
+        io:println(rs.ID);
+        dt.close();
+        return rs.ID;
+    }
+
+    return 0;
 }
 
 
