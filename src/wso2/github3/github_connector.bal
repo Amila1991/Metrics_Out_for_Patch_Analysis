@@ -106,7 +106,6 @@ public function GithubConnector::getCommitChanges (string repo, string owner, st
     request.setHeader("Accept", "application/vnd.github.cloak-preview");
 
     serviceUrl = serviceUrl + pathParams;
-    io:println("before call");
     var httpResponse = clientEndpoint -> get(serviceUrl, request);
     var response = validateResponse(httpResponse);
 

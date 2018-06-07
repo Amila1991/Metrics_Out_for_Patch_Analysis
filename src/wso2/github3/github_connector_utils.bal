@@ -15,7 +15,6 @@ function isContainRepo(GitHubRepository[] repositories,GitHubRepository reposito
 
 
 function validateResponse(http:Response | http:HttpConnectorError httpResponse) returns json | GitHubError {
-    io:println("validate");
     match httpResponse {
         http:HttpConnectorError err => {
             GitHubError githubError = {message:err.message, statusCode:err.statusCode, cause: err.cause};
