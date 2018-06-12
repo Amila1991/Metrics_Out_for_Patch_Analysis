@@ -625,6 +625,27 @@ service<http:Service> fileService bind patchMetricsEP {
         res.setJsonPayload(j);
         _ = conn -> respond(res);
     }
+
+    @http:ResourceConfig {
+        methods:["GET"],
+        path:"/{id}/source"
+    }
+    getJavaFileSource(endpoint conn, http:Request req, int id) {
+        io:println(req.getQueryParams());
+        io:print("id : ");
+        io:println(id);
+
+        var result = getFileSource(id);//dao:getModifiedJavaClassIssues(id, sortColumn, sortDir, pageIndex, pageSize);
+
+        io:println(result);
+        json j = {id: id, source:result};
+        http:Response res = new;
+        //res.setStringPayload("Successful");
+        res.setJsonPayload(j);
+        _ = conn -> respond(res);
+    }
+
+
 }
 
 public function getFileTestCoverageAndIssues(int id) returns model:Issue[] {
@@ -649,13 +670,40 @@ public function getFileTestCoverageAndIssues(int id) returns model:Issue[] {
         requestPaylodaList[0] = payload;
     }
 
-io:println(requestPaylodaList);
+    io:println(requestPaylodaList);
 
     testcoverage:ClassTestCoverageResponsePayload[] returnTo = testcoverage:getClassesTestCoverage(requestPaylodaList);
 
     return processIssues(file.ID, returnTo[0].issues);
 
 }
+
+public function getFileSource(int id) returns string {
+
+    model:FileInfo file = dao:getFileInfoById(id);
+
+    testcoverage:ClassTestCoverageRequestPayload payload = {};
+    // io:println(file);
+    if (file.FILE_NAME.contains(".java")) {
+        string[] splitedFileName = file.FILE_NAME.split("/");
+        string[] splitedRepoName = file.REPOSITORY_NAME.split("/");
+
+        payload.fileId = <string>file.ID;
+        payload.className = splitedFileName[lengthof splitedFileName - 1];
+        payload.packageName = generatePackageName(splitedFileName);
+        payload.componentName = splitedRepoName[1];
+        payload.productId = <string>dao:getProductComponent(splitedRepoName[1]);
+    }
+
+    io:println(payload);
+
+    string returnTo = testcoverage:getClassesSourceAsString(payload);
+
+    return returnTo;
+
+}
+
+
 
 public function generatePackageName(string[] splitedFileName) returns string {
     // string[] splitedFileName = fileName.split("/");

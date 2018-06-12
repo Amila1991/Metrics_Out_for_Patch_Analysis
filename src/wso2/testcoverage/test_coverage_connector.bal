@@ -72,6 +72,43 @@ public function getClassesTestCoverage(ClassTestCoverageRequestPayload[] classes
 }
 
 
+
+public function getClassesSourceAsString(ClassTestCoverageRequestPayload classPayload) returns string {
+
+    io:println(classPayload);
+
+    http:Request request = new;
+    string requestPath = "/product-coverage-service/getSourceFile";
+    log:printInfo("Requesting url from jacoco service " + requestPath + ".");
+    json jsonObject = check <json>classPayload;
+    io:println(jsonObject);
+   // json payload = {sourceFileJson:jsonObject};
+   // io:println(payload);
+    request.setJsonPayload(jsonObject);
+    var jacoResponse = jacocoEndpoint -> post(untaint requestPath, request);
+
+    string toReturn;
+    match jacoResponse{
+        http:Response jacocoRes => {
+            match jacocoRes.getStringPayload(){
+                string load => {
+                    io:println("load : " +load);
+                    toReturn = load;
+                    // log:printInfo(load.toString());
+                }
+                http:PayloadError err => {
+                    log:printErrorCause(err.message, err);
+                }
+            }
+        }
+        http:HttpConnectorError err => {
+            log:printErrorCause(err.message, err);
+        }
+    }
+    return toReturn;
+}
+
+
 //
 //endpoint http:Client testCoverageEndpoint {
 //    url:"https://postman-echo.com"
