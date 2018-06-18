@@ -185,38 +185,38 @@ public function insertFileInfo(model:FileInfo[] fileInfoList) returns int[] {
 }
 
 
-public function insertTopUpdatedFiles(model:TopUpdatedFile[] topUpdatedFileList) returns int[] {
-
-    log:printDebug("Inserting most updated files");
-
-    io:print("list : ");
-    io:println(topUpdatedFileList);
-    int[] res = [];
-    foreach i, topUpdatedFile in topUpdatedFileList {
-        log:printTrace("Inserting most updated file with file id : " + topUpdatedFile.FILE_INFO_ID);
-
-        sql:Parameter fileIdParam = (sql:TYPE_VARCHAR, topUpdatedFile.FILE_INFO_ID);
-        sql:Parameter fromDateParam = (sql:TYPE_DATE, topUpdatedFile.FROM_DATE);
-        sql:Parameter toDateParam = (sql:TYPE_DATE, topUpdatedFile.TO_DATE);
-        sql:Parameter coveredLinesParam = (sql:TYPE_INTEGER, topUpdatedFile.TEST_COVERED_LINES);
-        sql:Parameter missedLinesParam = (sql:TYPE_INTEGER, topUpdatedFile.TEST_MISSED_LINES);
-        sql:Parameter noofPatchesParam = (sql:TYPE_INTEGER, topUpdatedFile.NO_OF_PATCHES);
-        var rst = patchMetricDB ->
-        update("INSERT INTO TOP_UPDATED_FILES (FILE_INFO_ID,FROM_DATE,TO_DATE,TEST_COVERED_LINES,TEST_MISSED_LINES,NO_OF_PATCHES) VALUES (?,?,?,?,?,?)",
-            fileIdParam, fromDateParam, toDateParam, coveredLinesParam, missedLinesParam, noofPatchesParam);
-
-        match rst {
-            int status => {
-                res[i] = status;
-            }
-            error err => {
-                log:printErrorCause("Error occured while inserting most updated files with file id : " + topUpdatedFile.FILE_INFO_ID, err);
-            }
-        }
-    }
-
-    return res;
-}
+//public function insertTopUpdatedFiles(model:TopUpdatedFile[] topUpdatedFileList) returns int[] {
+//
+//    log:printDebug("Inserting most updated files");
+//
+//    io:print("list : ");
+//    io:println(topUpdatedFileList);
+//    int[] res = [];
+//    foreach i, topUpdatedFile in topUpdatedFileList {
+//        log:printTrace("Inserting most updated file with file id : " + topUpdatedFile.FILE_INFO_ID);
+//
+//        sql:Parameter fileIdParam = (sql:TYPE_VARCHAR, topUpdatedFile.FILE_INFO_ID);
+//        sql:Parameter fromDateParam = (sql:TYPE_DATE, topUpdatedFile.FROM_DATE);
+//        sql:Parameter toDateParam = (sql:TYPE_DATE, topUpdatedFile.TO_DATE);
+//        sql:Parameter coveredLinesParam = (sql:TYPE_INTEGER, topUpdatedFile.TEST_COVERED_LINES);
+//        sql:Parameter missedLinesParam = (sql:TYPE_INTEGER, topUpdatedFile.TEST_MISSED_LINES);
+//        sql:Parameter noofPatchesParam = (sql:TYPE_INTEGER, topUpdatedFile.NO_OF_PATCHES);
+//        var rst = patchMetricDB ->
+//        update("INSERT INTO TOP_UPDATED_FILES (FILE_INFO_ID,FROM_DATE,TO_DATE,TEST_COVERED_LINES,TEST_MISSED_LINES,NO_OF_PATCHES) VALUES (?,?,?,?,?,?)",
+//            fileIdParam, fromDateParam, toDateParam, coveredLinesParam, missedLinesParam, noofPatchesParam);
+//
+//        match rst {
+//            int status => {
+//                res[i] = status;
+//            }
+//            error err => {
+//                log:printErrorCause("Error occured while inserting most updated files with file id : " + topUpdatedFile.FILE_INFO_ID, err);
+//            }
+//        }
+//    }
+//
+//    return res;
+//}
 
 public function insertFileStats(model:FileStats[] fileStatsList) returns int[] {
 
@@ -232,11 +232,11 @@ public function insertFileStats(model:FileStats[] fileStatsList) returns int[] {
         sql:Parameter updatedDateParam = (sql:TYPE_DATE, fileStats.UPDATED_DATE);
         sql:Parameter coveredLinesParam = (sql:TYPE_INTEGER, fileStats.TEST_COVERED_LINES);
         sql:Parameter missedLinesParam = (sql:TYPE_INTEGER, fileStats.TEST_MISSED_LINES);
-        sql:Parameter noofIssuesParam = (sql:TYPE_INTEGER, fileStats.NO_OF_ISSUES);
+
         var rst = patchMetricDB ->
-        update("INSERT INTO FILE_STATS (FILE_INFO_ID,UPDATED_DATE,TEST_COVERED_LINES,TEST_MISSED_LINES,NO_OF_ISSUES) VALUES (?,?,?,?,?) ON " +
-                "DUPLICATE KEY UPDATE UPDATED_DATE=VALUES(UPDATED_DATE), TEST_COVERED_LINES=VALUES(TEST_COVERED_LINES), TEST_MISSED_LINES=VALUES(TEST_MISSED_LINES), NO_OF_ISSUES=VALUES(NO_OF_ISSUES)",
-            fileIdParam, updatedDateParam, coveredLinesParam, missedLinesParam, noofIssuesParam);
+        update("INSERT INTO FILE_STATS (FILE_INFO_ID,UPDATED_DATE,TEST_COVERED_LINES,TEST_MISSED_LINES) VALUES (?,?,?,?) ON " +
+                "DUPLICATE KEY UPDATE UPDATED_DATE=VALUES(UPDATED_DATE), TEST_COVERED_LINES=VALUES(TEST_COVERED_LINES), TEST_MISSED_LINES=VALUES(TEST_MISSED_LINES)",
+            fileIdParam, updatedDateParam, coveredLinesParam, missedLinesParam);
 
         match rst {
             int status => {
@@ -251,6 +251,39 @@ public function insertFileStats(model:FileStats[] fileStatsList) returns int[] {
     return res;
 }
 
+//public function insertFileIssues(model:Issue[] issueList) returns int[] {
+//
+//
+//    log:printDebug("Inserting files issues");
+//
+//    int[] res = [];
+//    foreach i, issue in issueList {
+//        log:printTrace("Inserting files issue with file id : " + issue.TOP_UPDATED_FILES_FILE_INFO_ID);
+//
+//        sql:Parameter IdParam = (sql:TYPE_INTEGER, issue.ID);
+//        sql:Parameter fileIdParam = (sql:TYPE_INTEGER, issue.TOP_UPDATED_FILES_FILE_INFO_ID);
+//        sql:Parameter lineParam = (sql:TYPE_VARCHAR, issue.LINE);
+//        sql:Parameter descriptionParam = (sql:TYPE_VARCHAR, issue.DESCRIPTION);
+//        sql:Parameter errorCodeParam = (sql:TYPE_VARCHAR, issue.ERROR_CODE);
+//        var rst = patchMetricDB ->
+//        update("INSERT INTO FILE_BUGS (ID, FILE_STATS_FILE_INFO_ID,LINE,DESCRIPTION,ERROR_CODE) VALUES (?,?,?,?,?)",
+//            IdParam, fileIdParam, lineParam, descriptionParam, errorCodeParam);
+//
+//        match rst {
+//            int status => {
+//                res[i] = status;
+//            }
+//            error err => {
+//                log:printErrorCause("Error occured while inserting files issues with file id : " + issue.TOP_UPDATED_FILES_FILE_INFO_ID, err);
+//            }
+//        }
+//
+//    }
+//
+//    return res;
+//}
+
+
 public function insertFileIssues(model:Issue[] issueList) returns int[] {
 
 
@@ -258,15 +291,15 @@ public function insertFileIssues(model:Issue[] issueList) returns int[] {
 
     int[] res = [];
     foreach i, issue in issueList {
-        log:printTrace("Inserting files issue with file id : " + issue.TOP_UPDATED_FILES_FILE_INFO_ID);
+        log:printTrace("Inserting files issue with file id : " + issue.FILE_STATS_FILE_INFO_ID);
 
         sql:Parameter IdParam = (sql:TYPE_INTEGER, issue.ID);
-        sql:Parameter fileIdParam = (sql:TYPE_INTEGER, issue.TOP_UPDATED_FILES_FILE_INFO_ID);
+        sql:Parameter fileIdParam = (sql:TYPE_INTEGER, issue.FILE_STATS_FILE_INFO_ID);
         sql:Parameter lineParam = (sql:TYPE_VARCHAR, issue.LINE);
         sql:Parameter descriptionParam = (sql:TYPE_VARCHAR, issue.DESCRIPTION);
         sql:Parameter errorCodeParam = (sql:TYPE_VARCHAR, issue.ERROR_CODE);
         var rst = patchMetricDB ->
-        update("INSERT INTO FILE_BUGS (ID, TOP_UPDATED_FILES_FILE_INFO_ID,LINE,DESCRIPTION,ERROR_CODE) VALUES (?,?,?,?,?)",
+        update("INSERT INTO ISSUE (ID, FILE_STATS_FILE_INFO_ID,LINE,DESCRIPTION,ERROR_CODE) VALUES (?,?,?,?,?)",
             IdParam, fileIdParam, lineParam, descriptionParam, errorCodeParam);
 
         match rst {
@@ -274,7 +307,7 @@ public function insertFileIssues(model:Issue[] issueList) returns int[] {
                 res[i] = status;
             }
             error err => {
-                log:printErrorCause("Error occured while inserting files issues with file id : " + issue.TOP_UPDATED_FILES_FILE_INFO_ID, err);
+                log:printErrorCause("Error occured while inserting files issues with file id : " + issue.FILE_STATS_FILE_INFO_ID, err);
             }
         }
 
@@ -302,12 +335,32 @@ public function clearTopUpdatedFiles() returns int {
     return res;
 }
 
+//
+//public function clearFileIssues() returns int {
+//    int res;
+//
+//    var rst = patchMetricDB ->
+//    update("DELETE FROM FILE_BUGS");
+//    match rst {
+//        int status => {
+//            res = status;
+//        }
+//        error err => {
+//            io:println("Commit info modification failed:" + err.message);
+//        }
+//    }
+//
+//    io:println("clear issues");
+//
+//    return res;
+//}
+
 
 public function clearFileIssues() returns int {
     int res;
 
     var rst = patchMetricDB ->
-    update("DELETE FROM FILE_BUGS");
+    update("DELETE FROM ISSUE");
     match rst {
         int status => {
             res = status;
@@ -869,12 +922,11 @@ public function getFileInfoWithStatsbyRepository(string repositoryName, string s
 
     sql:Parameter repositoryNameParam = (sql:TYPE_VARCHAR, repositoryName);
 
-    string dbQuery = "SELECT p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME, COUNT(pi.ID) AS NO_OF_PATCHES, IF(fi.FILE_NAME LIKE '%.java', " +
+    string dbQuery = " SELECT fileStats.*, COUNT(i.ID) AS NO_OF_ISSUES FROM (SELECT p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME, COUNT(pi.ID) AS NO_OF_PATCHES, SUM(fc.TOTAL_CHANGES) AS CHURNS, IF(fi.FILE_NAME LIKE '%.java', " +
         "IF(fs.UPDATED_DATE IS NULL, 'Not Updated', fs.UPDATED_DATE), 'N/A') AS UPDATED_DATE, " +
         "IF(fs.TEST_COVERED_LINES IS NULL OR fs.TEST_MISSED_LINES IS NULL, -1, " +
         "CONCAT(IF(fs.TEST_COVERED_LINES = 0 AND fs.TEST_MISSED_LINES = 0, 0, " +
-        "ROUND(((fs.TEST_COVERED_LINES/(fs.TEST_COVERED_LINES +  fs.TEST_MISSED_LINES))* 100 ),2)),'%')) AS TEST_COVERAGE, " +
-        "IF(fs.NO_OF_ISSUES IS NULL, -1, fs.NO_OF_ISSUES) AS NO_OF_ISSUES FROM PRODUCT p " +
+        "ROUND(((fs.TEST_COVERED_LINES/(fs.TEST_COVERED_LINES +  fs.TEST_MISSED_LINES))* 100 ),2)),'%')) AS TEST_COVERAGE FROM PRODUCT p " +
         "JOIN PRODUCT_COMPONENT pc ON p.ID = pc.PRODUCT_ID " +
         "JOIN PATCH_INFO pi ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
         "JOIN PATCH_RELATED_COMMITS prc ON pi.ID = prc.PATCH_INFO_ID " +
@@ -883,7 +935,9 @@ public function getFileInfoWithStatsbyRepository(string repositoryName, string s
         "JOIN FILE_INFO fi ON fc.FILE_INFO_ID = fi.ID " +
         "LEFT JOIN FILE_STATS fs ON fi.ID = fs.FILE_INFO_ID " +
         "WHERE fi.REPOSITORY_NAME = ? " +
-        "GROUP BY p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME " +
+        "GROUP BY p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME) fileStats " +
+        "JOIN ISSUE i ON i.FILE_STATS_FILE_INFO_ID = fileStats.ID " +
+        "GROUP BY fileStats.PRODUCT_NAME, fileStats.ID, fileStats.FILE_NAME, fileStats.REPOSITORY_NAME " +
         "ORDER BY " + sortColumn + " " + (sortDir == 1 ? "DESC" : "ASC") + " LIMIT " + pageSize + " OFFSET " + ((pageIndex - 1) * pageSize);
 
     io:println(dbQuery);
@@ -1053,82 +1107,110 @@ function getPatchChanges(string[] likeValues, string[] dislikeValues, int minOrM
 }
 
 
-public function highestNoPatchesModifiedFiles(string startDate, string endDate) returns model:FileWithNoofPatches[] {
+//public function highestNoPatchesModifiedFiles(string startDate, string endDate) returns model:FileWithNoofPatches[] {
+//
+//    log:printDebug("Retrieving patchs from Patch ETA");
+//
+//    sql:Parameter periodStartDateParam = (sql:TYPE_DATE, startDate);
+//    sql:Parameter periodEndDateParam = (sql:TYPE_DATE, endDate);
+//
+//    var dtReturned = patchMetricDB -> select("SELECT * FROM (SELECT p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME, COUNT(pi.ID) AS NO_OF_PATCHES FROM FILE_INFO fi " +
+//            "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
+//            "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
+//            "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
+//            "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
+//            "JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
+//            "JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID " +
+//            "WHERE pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? AND fi.REPOSITORY_NAME LIKE 'wso2/%' AND fi.FILE_NAME LIKE '%.java' AND pi.SUPPORT_JIRA NOT LIKE '%SECURITYINTERNAL%' AND pi.SUPPORT_JIRA NOT LIKE '%DEVINTERNAL%'  " +
+//            "GROUP BY p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME ORDER BY p.PRODUCT_NAME, NO_OF_PATCHES DESC) as fileInfo " +
+//            "WHERE (SELECT COUNT(*) FROM (SELECT p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME, COUNT(pi.ID) AS NO_OF_PATCHES FROM FILE_INFO fi " +
+//            "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
+//            "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
+//            "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
+//            "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
+//            "JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
+//            "JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID " +
+//            "WHERE pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? AND fi.REPOSITORY_NAME LIKE 'wso2/%' AND fi.FILE_NAME LIKE '%.java' AND pi.SUPPORT_JIRA NOT LIKE '%SECURITYINTERNAL%' AND pi.SUPPORT_JIRA NOT LIKE '%DEVINTERNAL%'  " +
+//            "GROUP BY p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME ORDER BY p.PRODUCT_NAME, NO_OF_PATCHES DESC) as filterFileInfo " +
+//            "WHERE filterFileInfo.PRODUCT_NAME = fileInfo.PRODUCT_NAME and filterFileInfo.NO_OF_PATCHES > fileInfo.NO_OF_PATCHES) <= 5 " +
+//            "ORDER BY NO_OF_PATCHES DESC",
+//        model:FileWithNoofPatches, periodStartDateParam, periodEndDateParam, periodStartDateParam, periodEndDateParam);
+//
+//    model:FileWithNoofPatches[] fileWithNoofPatchList = [];
+//    match dtReturned{
+//        table fileTable => {
+//            while (fileTable.hasNext()) {
+//                var rs = check <model:FileWithNoofPatches>fileTable.getNext();
+//                io:println(rs);
+//                fileWithNoofPatchList[lengthof fileWithNoofPatchList] = rs;
+//            }
+//        }
+//        error err => {
+//            log:printErrorCause("Error occured while retrieving WSO2 product name from WSO2_PRODUCT_COMPONENTS_wso2dev", err);
+//        }
+//    }
+//
+//    return fileWithNoofPatchList;
+//
+//}
 
-    log:printDebug("Retrieving patchs from Patch ETA");
+
+
+public function getMostModifiedJavaClasses(string startDate, string endDate, string sortColumn, int sortDir, int pageIndex, int pageSize) returns model:FileInfoWithStats[] {
+
+    log:printDebug("Retrieving most modified java classes with paging no : " + pageIndex);
 
     sql:Parameter periodStartDateParam = (sql:TYPE_DATE, startDate);
     sql:Parameter periodEndDateParam = (sql:TYPE_DATE, endDate);
 
-    var dtReturned = patchMetricDB -> select("SELECT * FROM (SELECT p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME, COUNT(pi.ID) AS NO_OF_PATCHES FROM FILE_INFO fi " +
-            "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
-            "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-            "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-            "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
-            "JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
-            "JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID " +
-            "WHERE pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? AND fi.REPOSITORY_NAME LIKE 'wso2/%' AND fi.FILE_NAME LIKE '%.java' AND pi.SUPPORT_JIRA NOT LIKE '%SECURITYINTERNAL%' AND pi.SUPPORT_JIRA NOT LIKE '%DEVINTERNAL%'  " +
-            "GROUP BY p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME ORDER BY p.PRODUCT_NAME, NO_OF_PATCHES DESC) as fileInfo " +
-            "WHERE (SELECT COUNT(*) FROM (SELECT p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME, COUNT(pi.ID) AS NO_OF_PATCHES FROM FILE_INFO fi " +
-            "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
-            "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-            "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-            "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
-            "JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
-            "JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID " +
-            "WHERE pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? AND fi.REPOSITORY_NAME LIKE 'wso2/%' AND fi.FILE_NAME LIKE '%.java' AND pi.SUPPORT_JIRA NOT LIKE '%SECURITYINTERNAL%' AND pi.SUPPORT_JIRA NOT LIKE '%DEVINTERNAL%'  " +
-            "GROUP BY p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME ORDER BY p.PRODUCT_NAME, NO_OF_PATCHES DESC) as filterFileInfo " +
-            "WHERE filterFileInfo.PRODUCT_NAME = fileInfo.PRODUCT_NAME and filterFileInfo.NO_OF_PATCHES > fileInfo.NO_OF_PATCHES) <= 5 " +
-            "ORDER BY NO_OF_PATCHES DESC",
-        model:FileWithNoofPatches, periodStartDateParam, periodEndDateParam, periodStartDateParam, periodEndDateParam);
-
-    model:FileWithNoofPatches[] fileWithNoofPatchList = [];
-    match dtReturned{
-        table fileTable => {
-            while (fileTable.hasNext()) {
-                var rs = check <model:FileWithNoofPatches>fileTable.getNext();
-                io:println(rs);
-                fileWithNoofPatchList[lengthof fileWithNoofPatchList] = rs;
-            }
-        }
-        error err => {
-            log:printErrorCause("Error occured while retrieving WSO2 product name from WSO2_PRODUCT_COMPONENTS_wso2dev", err);
-        }
-    }
-
-    return fileWithNoofPatchList;
-
-}
-
-
-
-public function getMostModifiedJavaClasses(string sortColumn, int sortDir, int pageIndex, int pageSize) returns model:ModifiedJavaClassInfo[] {
-
-    log:printDebug("Retrieving most modified java classes with paging no : " + pageIndex);
-
-    string dbQuery = "SELECT fileInfo.*, issuesCount.NO_OF_ISSUES FROM " +
-        "(SELECT tup.FILE_INFO_ID, p.PRODUCT_NAME, fi.FILE_NAME, tup.FROM_DATE, tup.TO_DATE, tup.NO_OF_PATCHES, " +
-        "CONCAT(IF(tup.TEST_COVERED_LINES = 0 AND tup.TEST_MISSED_LINES = 0, 0, ROUND(((tup.TEST_COVERED_LINES/(tup.TEST_COVERED_LINES +  tup.TEST_MISSED_LINES))* 100 ),2)),'%') AS TEST_COVERAGE FROM TOP_UPDATED_FILES tup " +
-        "JOIN FILE_INFO fi ON fi.ID = tup.FILE_INFO_ID " +
+    string dbQuery = "SELECT fileStats.*, COUNT(i.ID) AS NO_OF_ISSUES FROM ISSUE i RIGHT JOIN (SELECT * FROM (SELECT p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME, fs.UPDATED_DATE, COUNT(pi.ID) AS NO_OF_PATCHES, SUM(fc.TOTAL_CHANGES) AS CHURNS, CONCAT(IF(fs.TEST_COVERED_LINES = 0 AND fs.TEST_MISSED_LINES = 0, 0, ROUND(((fs.TEST_COVERED_LINES/(fs.TEST_COVERED_LINES +  fs.TEST_MISSED_LINES))* 100 ),2)),'%') AS TEST_COVERAGE FROM FILE_STATS fs " +
+        "JOIN FILE_INFO fi ON fs.FILE_INFO_ID = fi.ID " +
         "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
         "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
         "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
         "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
         "JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
         "JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID " +
-        "GROUP BY p.PRODUCT_NAME, fi.ID, tup.FILE_INFO_ID) fileInfo " +
-        "LEFT JOIN (SELECT fb.TOP_UPDATED_FILES_FILE_INFO_ID, COUNT(fb.ID) AS NO_OF_ISSUES FROM FILE_BUGS fb GROUP BY fb.TOP_UPDATED_FILES_FILE_INFO_ID) issuesCount ON fileInfo.FILE_INFO_ID = issuesCount.TOP_UPDATED_FILES_FILE_INFO_ID " +
+        "WHERE pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? AND fi.REPOSITORY_NAME LIKE 'wso2/%' AND fi.FILE_NAME LIKE '%.java' AND pi.SUPPORT_JIRA NOT LIKE '%SECURITYINTERNAL%' AND pi.SUPPORT_JIRA NOT LIKE '%DEVINTERNAL%' " +
+        "GROUP BY p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME) as fileInfo " +
+        "WHERE (SELECT COUNT(*) FROM (SELECT p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME, COUNT(pi.ID) AS NO_OF_PATCHES FROM FILE_STATS fs " +
+        "JOIN FILE_INFO fi ON fs.FILE_INFO_ID = fi.ID " +
+        "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
+        "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
+        "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
+        "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
+        "JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
+        "JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID " +
+        "WHERE pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? AND fi.REPOSITORY_NAME LIKE 'wso2/%' AND fi.FILE_NAME LIKE '%.java' AND pi.SUPPORT_JIRA NOT LIKE '%SECURITYINTERNAL%' AND pi.SUPPORT_JIRA NOT LIKE '%DEVINTERNAL%' " +
+        "GROUP BY p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME) as filterFileInfo " +
+        "WHERE filterFileInfo.PRODUCT_NAME = fileInfo.PRODUCT_NAME and filterFileInfo.NO_OF_PATCHES > fileInfo.NO_OF_PATCHES) <= 5) fileStats ON i.FILE_STATS_FILE_INFO_ID = fileStats.ID " +
+        "GROUP BY fileStats.PRODUCT_NAME, fileStats.ID, fileStats.FILE_NAME, fileStats.REPOSITORY_NAME " +
         "ORDER BY " + sortColumn + " " + (sortDir == 1 ? "DESC" : "ASC") + " LIMIT " + pageSize + " OFFSET " + ((pageIndex - 1) * pageSize);
 
-    io:println(dbQuery);
-    var dtReturned = patchMetricDB -> select(dbQuery, model:ModifiedJavaClassInfo);
 
-    model:ModifiedJavaClassInfo[] modifiedJavaClassList = [];
+    //string dbQuery = "SELECT fileInfo.*, issuesCount.NO_OF_ISSUES FROM " +
+    //    "(SELECT tup.FILE_INFO_ID, p.PRODUCT_NAME, fi.FILE_NAME, tup.FROM_DATE, tup.TO_DATE, tup.NO_OF_PATCHES, " +
+    //    "CONCAT(IF(tup.TEST_COVERED_LINES = 0 AND tup.TEST_MISSED_LINES = 0, 0, ROUND(((tup.TEST_COVERED_LINES/(tup.TEST_COVERED_LINES +  tup.TEST_MISSED_LINES))* 100 ),2)),'%') AS TEST_COVERAGE FROM TOP_UPDATED_FILES tup " +
+    //    "JOIN FILE_INFO fi ON fi.ID = tup.FILE_INFO_ID " +
+    //    "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
+    //    "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
+    //    "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
+    //    "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
+    //    "JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
+    //    "JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID " +
+    //    "GROUP BY p.PRODUCT_NAME, fi.ID, tup.FILE_INFO_ID) fileInfo " +
+    //    "LEFT JOIN (SELECT fb.TOP_UPDATED_FILES_FILE_INFO_ID, COUNT(fb.ID) AS NO_OF_ISSUES FROM FILE_BUGS fb GROUP BY fb.TOP_UPDATED_FILES_FILE_INFO_ID) issuesCount ON fileInfo.FILE_INFO_ID = issuesCount.TOP_UPDATED_FILES_FILE_INFO_ID " +
+    //    "ORDER BY " + sortColumn + " " + (sortDir == 1 ? "DESC" : "ASC") + " LIMIT " + pageSize + " OFFSET " + ((pageIndex - 1) * pageSize);
+
+    io:println(dbQuery);
+    var dtReturned = patchMetricDB -> select(dbQuery, model:FileInfoWithStats, periodStartDateParam, periodEndDateParam, periodStartDateParam, periodEndDateParam);
+
+    model:FileInfoWithStats[] fileInfoWithStatsList = [];
     match dtReturned {
         table dt => {
             while (dt.hasNext()) {
-                var rs = check <model:ModifiedJavaClassInfo>dt.getNext();
-                modifiedJavaClassList[lengthof modifiedJavaClassList] = rs;
+                var rs = check <model:FileInfoWithStats>dt.getNext();
+                fileInfoWithStatsList[lengthof fileInfoWithStatsList] = rs;
                 //io:println(rs);
             }
         }
@@ -1137,37 +1219,78 @@ public function getMostModifiedJavaClasses(string sortColumn, int sortDir, int p
         }
     }
 
-    return modifiedJavaClassList;
+    return fileInfoWithStatsList;
 }
 
+public function getJavaClassWithDateRange(int id, string startDate, string endDate) returns model:FileInfoWithStats {
 
-public function getModifiedJavaClass(int id) returns model:ModifiedJavaClassInfo {
+    log:printDebug("Retrieving java class with file id : " + id);
 
-    log:printDebug("Retrieving modified java class with file id : " + id);
+    sql:Parameter idParam = (sql:TYPE_INTEGER, id);
+    sql:Parameter periodStartDateParam = (sql:TYPE_DATE, startDate);
+    sql:Parameter periodEndDateParam = (sql:TYPE_DATE, endDate);
+
+    string dbQuery = "SELECT fileStats.*, COUNT(i.ID) AS NO_OF_ISSUES FROM (SELECT p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME, fs.UPDATED_DATE, COUNT(pi.ID) AS NO_OF_PATCHES, SUM(fc.TOTAL_CHANGES) AS CHURNS, CONCAT(IF(fs.TEST_COVERED_LINES = 0 AND fs.TEST_MISSED_LINES = 0, 0, ROUND(((fs.TEST_COVERED_LINES/(fs.TEST_COVERED_LINES +  fs.TEST_MISSED_LINES))* 100 ),2)),'%') AS TEST_COVERAGE FROM FILE_STATS fs
+        JOIN FILE_INFO fi ON fs.FILE_INFO_ID = fi.ID
+        JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID
+        JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID
+        JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID
+        JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID
+        JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID
+        JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID
+        WHERE fi.ID = ? AND pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? AND fi.REPOSITORY_NAME LIKE 'wso2/%' AND fi.FILE_NAME LIKE '%.java' AND pi.SUPPORT_JIRA NOT LIKE '%SECURITYINTERNAL%' AND pi.SUPPORT_JIRA NOT LIKE '%DEVINTERNAL%'
+        GROUP BY p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME) fileStats
+        JOIN ISSUE i ON fileStats.ID = i.FILE_STATS_FILE_INFO_ID
+        GROUP BY fileStats.PRODUCT_NAME, fileStats.ID, fileStats.FILE_NAME, fileStats.REPOSITORY_NAME";
+
+    io:println(dbQuery);
+    var dtReturned = patchMetricDB -> select(dbQuery, model:FileInfoWithStats, idParam, periodStartDateParam, periodEndDateParam);
+
+    model:FileInfoWithStats javaClass;
+    match dtReturned {
+        table dt => {
+            while (dt.hasNext()) {
+                var rs = check <model:FileInfoWithStats>dt.getNext();
+                javaClass = rs;
+                //io:println(rs);
+            }
+        }
+        error err => {
+
+        }
+    }
+
+    return javaClass;
+}
+
+public function getJavaClass(int id) returns model:FileInfoWithStats {
+
+    log:printDebug("Retrieving java class with file id : " + id);
 
     sql:Parameter idParam = (sql:TYPE_INTEGER, id);
 
-    string dbQuery = "SELECT tup.FILE_INFO_ID, p.PRODUCT_NAME, fi.FILE_NAME, tup.FROM_DATE, tup.TO_DATE, tup.NO_OF_PATCHES, " +
-        "CONCAT(IF(tup.TEST_COVERED_LINES = 0 AND tup.TEST_MISSED_LINES = 0, 0, ROUND(((tup.TEST_COVERED_LINES/(tup.TEST_COVERED_LINES +  tup.TEST_MISSED_LINES))* 100 ),2)),'%') AS TEST_COVERAGE FROM TOP_UPDATED_FILES tup " +
-        "JOIN FILE_INFO fi ON fi.ID = tup.FILE_INFO_ID " +
-        "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
-        "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-        "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-        "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
-        "JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
-        "JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID " +
-        "WHERE tup.FILE_INFO_ID = ? " +
-        "GROUP BY p.PRODUCT_NAME, fi.ID, tup.FILE_INFO_ID";
+    string dbQuery = "SELECT fileStats.*, COUNT(i.ID) AS NO_OF_ISSUES FROM (SELECT p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME, fs.UPDATED_DATE, COUNT(pi.ID) AS NO_OF_PATCHES, SUM(fc.TOTAL_CHANGES) AS CHURNS, CONCAT(IF(fs.TEST_COVERED_LINES = 0 AND fs.TEST_MISSED_LINES = 0, 0, ROUND(((fs.TEST_COVERED_LINES/(fs.TEST_COVERED_LINES +  fs.TEST_MISSED_LINES))* 100 ),2)),'%') AS TEST_COVERAGE FROM FILE_STATS fs
+        JOIN FILE_INFO fi ON fs.FILE_INFO_ID = fi.ID
+        JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID
+        JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID
+        JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID
+        JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID
+        JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID
+        JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID
+        WHERE fi.ID = ?
+        GROUP BY p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME) fileStats
+        JOIN ISSUE i ON fileStats.ID = i.FILE_STATS_FILE_INFO_ID
+        GROUP BY fileStats.PRODUCT_NAME, fileStats.ID, fileStats.FILE_NAME, fileStats.REPOSITORY_NAME";
 
     io:println(dbQuery);
-    var dtReturned = patchMetricDB -> select(dbQuery, model:ModifiedJavaClassInfo, idParam);
+    var dtReturned = patchMetricDB -> select(dbQuery, model:FileInfoWithStats, idParam);
 
-    model:ModifiedJavaClassInfo modifiedJavaClass;
+    model:FileInfoWithStats javaClass;
     match dtReturned {
         table dt => {
             while (dt.hasNext()) {
-                var rs = check <model:ModifiedJavaClassInfo>dt.getNext();
-                modifiedJavaClass = rs;
+                var rs = check <model:FileInfoWithStats>dt.getNext();
+                javaClass = rs;
                 //io:println(rs);
             }
         }
@@ -1176,16 +1299,56 @@ public function getModifiedJavaClass(int id) returns model:ModifiedJavaClassInfo
         }
     }
 
-    return modifiedJavaClass;
+    return javaClass;
 }
 
-public function getJavaClassIssuesFromDB(int fileId) returns model:Issue[] {
+//public function getModifiedJavaClass(int id) returns model:ModifiedJavaClassInfo {
+//
+//    log:printDebug("Retrieving modified java class with file id : " + id);
+//
+//    sql:Parameter idParam = (sql:TYPE_INTEGER, id);
+//
+//    string dbQuery = "SELECT tup.FILE_INFO_ID, p.PRODUCT_NAME, fi.FILE_NAME, tup.FROM_DATE, tup.TO_DATE, tup.NO_OF_PATCHES, " +
+//        "CONCAT(IF(tup.TEST_COVERED_LINES = 0 AND tup.TEST_MISSED_LINES = 0, 0, ROUND(((tup.TEST_COVERED_LINES/(tup.TEST_COVERED_LINES +  tup.TEST_MISSED_LINES))* 100 ),2)),'%') AS TEST_COVERAGE FROM TOP_UPDATED_FILES tup " +
+//        "JOIN FILE_INFO fi ON fi.ID = tup.FILE_INFO_ID " +
+//        "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
+//        "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
+//        "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
+//        "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
+//        "JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
+//        "JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID " +
+//        "WHERE tup.FILE_INFO_ID = ? " +
+//        "GROUP BY p.PRODUCT_NAME, fi.ID, tup.FILE_INFO_ID";
+//
+//    io:println(dbQuery);
+//    var dtReturned = patchMetricDB -> select(dbQuery, model:ModifiedJavaClassInfo, idParam);
+//
+//    model:ModifiedJavaClassInfo modifiedJavaClass;
+//    match dtReturned {
+//        table dt => {
+//            while (dt.hasNext()) {
+//                var rs = check <model:ModifiedJavaClassInfo>dt.getNext();
+//                modifiedJavaClass = rs;
+//                //io:println(rs);
+//            }
+//        }
+//        error err => {
+//
+//        }
+//    }
+//
+//    return modifiedJavaClass;
+//}
 
-    log:printDebug("Retrieving issues in modified java class with file id : " + fileId );
+
+
+public function getJavaClassIssuesFromDB(int fileId, string sortColumn, int sortDir, int pageIndex, int pageSize) returns model:Issue[] {
+
+    log:printDebug("Retrieving issues in modified java class with file id : " + fileId);
 
     sql:Parameter idParam = (sql:TYPE_INTEGER, fileId);
 
-    string dbQuery = "SELECT * FROM FILE_BUGS WHERE TOP_UPDATED_FILES_FILE_INFO_ID = ?";
+    string dbQuery = "SELECT * FROM ISSUE WHERE FILE_STATS_FILE_INFO_ID = ? ORDER BY " + sortColumn + " " + (sortDir == 1 ? "DESC" : "ASC") + " LIMIT " + pageSize + " OFFSET " + ((pageIndex - 1) * pageSize);
 
     io:println(dbQuery);
     var dtReturned = patchMetricDB -> select(dbQuery, model:Issue, idParam);

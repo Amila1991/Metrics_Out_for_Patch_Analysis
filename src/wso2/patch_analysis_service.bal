@@ -1,5 +1,6 @@
 import ballerina/http;
 import ballerina/io;
+import ballerina/time;
 import wso2/dao;
 import wso2/model;
 import wso2/testcoverage;
@@ -540,6 +541,8 @@ service<http:Service> fileService bind patchMetricsEP {
     getMostModifiedJavaClassesList(endpoint conn, http:Request req) {
         io:println(req.getQueryParams());
 
+        time:Time time = time:currentTime();
+
         var pageIndexStr = <int>(<string>untaint req.getQueryParams().pageIndex);
         var pageSizeStr = <int>(<string>untaint req.getQueryParams().pageSize);
         var sortDirStr = <int>(<string>untaint req.getQueryParams().sortDir);
@@ -579,7 +582,7 @@ service<http:Service> fileService bind patchMetricsEP {
                 io:println("ABC");
             }
         }
-        var result = dao:getMostModifiedJavaClasses(sortColumn, sortDir, pageIndex, pageSize);
+        var result = dao:getMostModifiedJavaClasses(time.subtractDuration(0, 3, 0, 0, 0, 0, 0).format("yyyy-MM-dd"), time.format("yyyy-MM-dd"), sortColumn, sortDir, pageIndex, pageSize);
         io:println(result);
         json j = check <json>result;
         http:Response res = new;
@@ -596,7 +599,26 @@ service<http:Service> fileService bind patchMetricsEP {
         io:print("id : ");
         io:println(id);
 
-        var result = dao:getModifiedJavaClass(id);
+        time:Time time = time:currentTime();
+
+        var result = dao:getJavaClassWithDateRange(id, time.subtractDuration(0, 3, 0, 0, 0, 0, 0).format("yyyy-MM-dd"), time.format("yyyy-MM-dd"));
+        io:println(result);
+        json j = check <json>result;
+        http:Response res = new;
+        //res.setStringPayload("Successful");
+        res.setJsonPayload(j);
+        _ = conn -> respond(res);
+    }
+
+    @http:ResourceConfig {
+        methods:["GET"],
+        path:"/{id}"
+    }
+    getJavaClass(endpoint conn, http:Request req, int id) {
+        io:print("id : ");
+        io:println(id);
+
+        var result = dao:getJavaClass(id);
         io:println(result);
         json j = check <json>result;
         http:Response res = new;
@@ -609,15 +631,55 @@ service<http:Service> fileService bind patchMetricsEP {
         methods:["GET"],
         path:"/{id}/issues"
     }
-    getMostModifiedJavaClassIssues(endpoint conn, http:Request req, int id) {
+    getJavaClassIssues(endpoint conn, http:Request req, int id) {
         io:println(req.getQueryParams());
         io:print("id : ");
         io:println(id);
 
-        var result = dao:getJavaClassIssuesFromDB(id);
-        if (lengthof result == 0) {
-            result = getFileTestCoverageAndIssues(id);//dao:getModifiedJavaClassIssues(id, sortColumn, sortDir, pageIndex, pageSize);
+        var pageIndexStr = <int>(<string>untaint req.getQueryParams().pageIndex);
+        var pageSizeStr = <int>(<string>untaint req.getQueryParams().pageSize);
+        var sortDirStr = <int>(<string>untaint req.getQueryParams().sortDir);
+
+        string sortColumn = <string>untaint req.getQueryParams().sortColumn;
+        int pageIndex = 1;
+        int pageSize = 10;
+        int sortDir = 0;
+        match pageIndexStr {
+            int index => {
+                io:println(index);
+                pageIndex = index;
+            }
+            error err => {
+                io:println(err);
+            }
         }
+
+        match pageSizeStr {
+            int size => {
+                io:println(size);
+                pageSize = size;
+            }
+            error err => {
+                io:println(err);
+                io:println("ABC");
+            }
+        }
+
+        match sortDirStr {
+            int dir => {
+                io:println(dir);
+                sortDir = dir;
+            }
+            error err => {
+                io:println(err);
+                io:println("ABC");
+            }
+        }
+
+        var result = dao:getJavaClassIssuesFromDB(id, sortColumn, sortDir, pageIndex, pageSize);
+        //if (lengthof result == 0) {
+        //    result = getFileTestCoverageAndIssues(id);//dao:getModifiedJavaClassIssues(id, sortColumn, sortDir, pageIndex, pageSize);
+        //}
         io:println(result);
         json j = check <json>result;
         http:Response res = new;
@@ -648,35 +710,35 @@ service<http:Service> fileService bind patchMetricsEP {
 
 }
 
-public function getFileTestCoverageAndIssues(int id) returns model:Issue[] {
-
-    model:FileInfo file = dao:getFileInfoById(id);
-
-    testcoverage:ClassTestCoverageRequestPayload[] requestPaylodaList = [];
-
-    testcoverage:ClassTestCoverageRequestPayload payload = {};
-    // io:println(file);
-    if (file.FILE_NAME.contains(".java")) {
-        string[] splitedFileName = file.FILE_NAME.split("/");
-        string[] splitedRepoName = file.REPOSITORY_NAME.split("/");
-
-        payload.fileId = <string>file.ID;
-        payload.className = splitedFileName[lengthof splitedFileName - 1];
-        payload.packageName = generatePackageName(splitedFileName);
-        payload.componentName = splitedRepoName[1];
-        payload.productId = <string>dao:getProductComponent(splitedRepoName[1]);
-        // io:println("payload : " + generatePackageName(splitedFileName));
-        //  io:println(payload);
-        requestPaylodaList[0] = payload;
-    }
-
-    io:println(requestPaylodaList);
-
-    testcoverage:ClassTestCoverageResponsePayload[] returnTo = testcoverage:getClassesTestCoverage(requestPaylodaList);
-
-    return processIssues(file.ID, returnTo[0].issues);
-
-}
+//public function getFileTestCoverageAndIssues(int id) returns model:Issue[] {
+//
+//    model:FileInfo file = dao:getFileInfoById(id);
+//
+//    testcoverage:ClassTestCoverageRequestPayload[] requestPaylodaList = [];
+//
+//    testcoverage:ClassTestCoverageRequestPayload payload = {};
+//    // io:println(file);
+//    if (file.FILE_NAME.contains(".java")) {
+//        string[] splitedFileName = file.FILE_NAME.split("/");
+//        string[] splitedRepoName = file.REPOSITORY_NAME.split("/");
+//
+//        payload.fileId = <string>file.ID;
+//        payload.className = splitedFileName[lengthof splitedFileName - 1];
+//        payload.packageName = generatePackageName(splitedFileName);
+//        payload.componentName = splitedRepoName[1];
+//        payload.productId = <string>dao:getProductComponent(splitedRepoName[1]);
+//        // io:println("payload : " + generatePackageName(splitedFileName));
+//        //  io:println(payload);
+//        requestPaylodaList[0] = payload;
+//    }
+//
+//    io:println(requestPaylodaList);
+//
+//    testcoverage:ClassTestCoverageResponsePayload[] returnTo = testcoverage:getClassesTestCoverage(requestPaylodaList);
+//
+//    return processIssues(file.ID, returnTo[0].issues);
+//
+//}
 
 public function getFileSource(int id) returns string {
 
@@ -745,30 +807,30 @@ public function generatePackageName(string[] splitedFileName) returns string {
     return packageName;
 }
 
-public function processIssues(int id, string[] issuesArr) returns model:Issue[] {
-
-    model:Issue[] issueList;
-
-    foreach issueStr in issuesArr {
-        io:println("issue : " + issueStr);
-        model:Issue issue;
-        string[] issueSplit = issueStr.split(":");
-        if (lengthof issueSplit >= 3) {
-            issue.ID = lengthof issueList + 1;
-            issue.TOP_UPDATED_FILES_FILE_INFO_ID = id;
-            issue.ERROR_CODE = issueSplit[0];
-            issue.DESCRIPTION = issueSplit[1];
-            issue.LINE = issueSplit[lengthof issueSplit - 1].subString(1, issueSplit[lengthof issueSplit - 1].length() - 1).split(" ")[1];
-            io:println(issue.LINE);
-
-            issueList[lengthof issueList] = issue;
-        }
-        io:println("end");
-    }
-
-    return issueList;
-}
-
+//public function processIssues(int id, string[] issuesArr) returns model:Issue[] {
+//
+//    model:Issue[] issueList;
+//
+//    foreach issueStr in issuesArr {
+//        io:println("issue : " + issueStr);
+//        model:Issue issue;
+//        string[] issueSplit = issueStr.split(":");
+//        if (lengthof issueSplit >= 3) {
+//            issue.ID = lengthof issueList + 1;
+//            issue.TOP_UPDATED_FILES_FILE_INFO_ID = id;
+//            issue.ERROR_CODE = issueSplit[0];
+//            issue.DESCRIPTION = issueSplit[1];
+//            issue.LINE = issueSplit[lengthof issueSplit - 1].subString(1, issueSplit[lengthof issueSplit - 1].length() - 1).split(" ")[1];
+//            io:println(issue.LINE);
+//
+//            issueList[lengthof issueList] = issue;
+//        }
+//        io:println("end");
+//    }
+//
+//    return issueList;
+//}
+//
 
 
 

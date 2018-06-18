@@ -105,15 +105,15 @@ public type WSO2ProductComponent {
 };
 
 
-public type FileWithNoofPatches {
-    string PRODUCT_NAME;
-    int ID;
-    string FILE_NAME;
-    string REPOSITORY_NAME;
-    int NO_OF_PATCHES;
-    FileLineCoverage LINE_COVERAGE;
-    string[] ISSUES;
-};
+//public type FileWithNoofPatches {
+//    string PRODUCT_NAME;
+//    int ID;
+//    string FILE_NAME;
+//    string REPOSITORY_NAME;
+//    int NO_OF_PATCHES;
+//    FileLineCoverage LINE_COVERAGE;
+//    string[] ISSUES;
+//};
 
 
 public type FileLineCoverage {
@@ -129,50 +129,58 @@ public type ProductComponent {
 };
 
 
-public type TopUpdatedFile {
-    int FILE_INFO_ID;
-    string FROM_DATE;
-    string TO_DATE;
-    int TEST_COVERED_LINES;
-    int TEST_MISSED_LINES;
-    int NO_OF_PATCHES;
-};
+//public type TopUpdatedFile {
+//    int FILE_INFO_ID;
+//    string FROM_DATE;
+//    string TO_DATE;
+//    int TEST_COVERED_LINES;
+//    int TEST_MISSED_LINES;
+//    int NO_OF_PATCHES;
+//};
 
 public type FileStats {
     int FILE_INFO_ID;
     int TEST_COVERED_LINES;
     int TEST_MISSED_LINES;
     string UPDATED_DATE;
-    int NO_OF_ISSUES;
 };
+
+//public type Issue {
+//    int ID;
+//    int TOP_UPDATED_FILES_FILE_INFO_ID;
+//    string LINE;
+//    string DESCRIPTION;
+//    string ERROR_CODE;
+//};
 
 public type Issue {
     int ID;
-    int TOP_UPDATED_FILES_FILE_INFO_ID;
+    int FILE_STATS_FILE_INFO_ID;
     string LINE;
     string DESCRIPTION;
     string ERROR_CODE;
 };
 
-public type ModifiedJavaClassInfo {
-    int FILE_INFO_ID;
-    string PRODUCT_NAME;
-    string FILE_NAME;
-    string FROM_DATE;
-    string TO_DATE;
-    int NO_OF_PATCHES;
-    string TEST_COVERAGE;
-    int NO_OF_ISSUES;
-};
+//public type ModifiedJavaClassInfo {
+//    int FILE_INFO_ID;
+//    string PRODUCT_NAME;
+//    string FILE_NAME;
+//    string FROM_DATE;
+//    string TO_DATE;
+//    int NO_OF_PATCHES;
+//    string TEST_COVERAGE;
+//    int NO_OF_ISSUES;
+//};
 
 
 public type FileInfoWithStats {
     string PRODUCT_NAME;
     int ID;
     string FILE_NAME;
+    string UPDATED_DATE;
     string REPOSITORY_NAME;
     int NO_OF_PATCHES;
-    string UPDATED_DATE;
+    float CHURNS;
     string TEST_COVERAGE;
     int NO_OF_ISSUES;
 };
