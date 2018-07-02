@@ -26,6 +26,7 @@ public type FileInfo {
     int ID;
     string FILE_NAME;
     string REPOSITORY_NAME;
+    int LOC;
 };
 
 //@Description {value:"Commit changes struct."}
@@ -128,16 +129,6 @@ public type ProductComponent {
     string COMPONENT_NAME;
 };
 
-
-//public type TopUpdatedFile {
-//    int FILE_INFO_ID;
-//    string FROM_DATE;
-//    string TO_DATE;
-//    int TEST_COVERED_LINES;
-//    int TEST_MISSED_LINES;
-//    int NO_OF_PATCHES;
-//};
-
 public type FileStats {
     int FILE_INFO_ID;
     int TEST_COVERED_LINES;
@@ -145,13 +136,6 @@ public type FileStats {
     string UPDATED_DATE;
 };
 
-//public type Issue {
-//    int ID;
-//    int TOP_UPDATED_FILES_FILE_INFO_ID;
-//    string LINE;
-//    string DESCRIPTION;
-//    string ERROR_CODE;
-//};
 
 public type Issue {
     int ID;
@@ -160,18 +144,6 @@ public type Issue {
     string DESCRIPTION;
     string ERROR_CODE;
 };
-
-//public type ModifiedJavaClassInfo {
-//    int FILE_INFO_ID;
-//    string PRODUCT_NAME;
-//    string FILE_NAME;
-//    string FROM_DATE;
-//    string TO_DATE;
-//    int NO_OF_PATCHES;
-//    string TEST_COVERAGE;
-//    int NO_OF_ISSUES;
-//};
-
 
 public type FileInfoWithStats {
     string PRODUCT_NAME;
@@ -184,14 +156,3 @@ public type FileInfoWithStats {
     string TEST_COVERAGE;
     int NO_OF_ISSUES;
 };
-
-
-
-
-
-//public enum GithubRepoType {
-//    PUBLIC,
-//    SUPPORT
-//}
-
-
