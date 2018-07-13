@@ -1,49 +1,55 @@
+//
+// Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+//
+// WSO2 Inc. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package wso2.timetasks;
 
 import wso2/dao;
 import wso2/github3;
 import ballerina/task;
-import ballerina/io;
 import ballerina/config;
 import ballerina/time;
 import ballerina/runtime;
 import ballerina/log;
 import wso2/model;
 
-
-@final string WSO2 = "wso2";
-@final string accessToken = config:getAsString("github.access_token");
-
 endpoint github3:Client githubClient {
-    accessToken: "9eb5e0a3ec30e09d1ddfadb9071fd31930e5da29",
+    accessToken: config:getAsString(GITHUB_ACCESS_TOKEN),
     clientConfig:{}
 };
 
-int i = 0;
-int currentTimeMills = 60000;
+
+int currentTimeMills = 61000;
 
 public function githubCommitRetrievingAppointment () {
     worker githubCommitsRetrievingWorker {
-        log:printInfo("------- Scheduling Appointments 2 ----------------");
-
-        //function () returns (error) onTriggerFunction;
-        //function (error e) onErrorFunction;
-        //
-        //onTriggerFunction = retrieveGithubCommit;
-        //onErrorFunction = loggedError;
+        log:printInfo("Starting Github commit information retrirevig task appointment");
 
         (function() returns error?) onTriggerFunction =  retrieveGithubCommit;
-        (function(error )) onErrorFunction = loggedError;
+        (function(error )) onErrorFunction = loggedGithubCommitProcessError;
 
-        task:Appointment appointment = new task:Appointment(onTriggerFunction, onErrorFunction, "40 19 * * * ?");
+        task:Appointment appointment = new task:Appointment(onTriggerFunction, onErrorFunction,
+            config:getAsString(COMMIT_DATA_PROCESS_CRON));
         appointment.schedule();
     }
 }
 
 function retrieveGithubCommit() returns (error?) {
 
-    log:printDebug("Start retrieving girhub commit information");
-  //  io:println("start retrieving girhub commit information");
+    log:printInfo("Start retrieving github commit information");
 
     time:Time time = time:currentTime();
     int startTime = time:currentTime().time;
@@ -51,124 +57,97 @@ function retrieveGithubCommit() returns (error?) {
 
     model:GithubCommitInfo[] githubCommitInfoList = dao:getIncompleteGithubCommitInfo();
     int lastFileId = dao:getLastFileId();
-    //io:println("enter : " + lengthof githubCommitInfoList + " , " + lastFileId);
 
     while (lengthof githubCommitInfoList > 0) {
-
         model:FileInfo[] fileInfoList = [];
         model:CommitFileInfo[] commitFileList = [];
 
         foreach githubCommtInfo in githubCommitInfoList {
-
             github3:GitHubRepository[] response = [];
             github3:GitHubRepository[] repo = [];
 
-      //      io:println(githubCommtInfo);
+            log:printTrace("Start searching commit");
+
             if ("PUBLIC" == githubCommtInfo.GITHUB_SHA_ID_REPO_TYPE) {
                 searchRequestCount = searchRequestCount + 1;
                 var resp = githubClient -> searchRepositoryViaCommit(githubCommtInfo.GITHUB_SHA_ID);
-                //response = check <github3:GitHubRepository[]> resp;
 
                 match resp{
                     github3:GitHubRepository[] gitRepos => {
                         response = gitRepos;
                         repo = response.filter((github3:GitHubRepository repository) => boolean {
-                                //             io:println(repository);
-                                return repository.owner.contains("wso2");
+                                return repository.owner.contains(WSO2);
                             });
                     }
                     github3:GitHubError err => {
-                        io:print("Commit Search Error 1 ID : " + githubCommtInfo.GITHUB_SHA_ID + "  ");
-                        io:println(err);
+                        log:printErrorCause("Error ocurred while calling Github commit searching API for public repository", err);
                     }
                     error err => {
-                        io:println(" " + err.message);
+                        log:printErrorCause("Error ocurred while searching Github commit for public repository", err);
                     }
                 }
 
-          //      io:print("response double check 1 : ");
-            //    io:println(response);
                 if (lengthof repo == 0) {
                     searchRequestCount = searchRequestCount + 1;
                     var resp1 = githubClient -> searchRepositoryViaPR(githubCommtInfo.GITHUB_SHA_ID);
-                    //response= check <github3:GitHubRepository[]> resp;
+
                     match resp1{
                         github3:GitHubRepository[] gitRepos => {
                             response = gitRepos;
                             repo = response.filter((github3:GitHubRepository repository) => boolean {
-                                    //             io:println(repository);
-                                    return repository.owner.contains("wso2");
+                                    return repository.owner.contains(WSO2);
                                 });
                         }
                         github3:GitHubError err => {
-                            io:print("PR Search Error 1 ID : " + githubCommtInfo.GITHUB_SHA_ID + "  ");
-                            io:println(err);
+                            log:printErrorCause("Error ocurred while calling Github PR API for public repository", err);
                         }
                         error err => {
-                            io:println(" " + err.message);
+                            log:printErrorCause("Error ocurred while searching Github PR for public repository", err);
                         }
                     }
                 }
             } else if ("SUPPORT" == githubCommtInfo.GITHUB_SHA_ID_REPO_TYPE) {
                 searchRequestCount = searchRequestCount + 1;
                 var resp = githubClient -> searchRepositoryViaPR(githubCommtInfo.GITHUB_SHA_ID);
-                //response = check <github3:GitHubRepository[]> resp;
+
                 match resp{
                     github3:GitHubRepository[] gitRepos => {
                         response = gitRepos;
                         repo = response.filter((github3:GitHubRepository repository) => boolean {
-                                //             io:println(repository);
-                                return repository.owner.contains("wso2");
+                                return repository.owner.contains(WSO2);
                             });
                     }
                     github3:GitHubError err => {
-                        io:print("PR Search Error 2 ID : " + githubCommtInfo.GITHUB_SHA_ID + "  ");
-                        io:println(err);
+                        log:printErrorCause("Error ocurred while calling Github PR API for support repository", err);
                     }
                     error err => {
-                        io:println(" " + err.message);
+                        log:printErrorCause("Error ocurred while searching Github PR for support repository", err);
                     }
                 }
-              //  io:print("response double check 1 : ");
-                //io:println(response);
+
                 if (lengthof repo == 0) {
                     searchRequestCount = searchRequestCount + 1;
                     var resp1 = githubClient -> searchRepositoryViaPR(githubCommtInfo.GITHUB_SHA_ID);
-                    //response = check <github3:GitHubRepository[]> resp;
+
                     match resp1{
                         github3:GitHubRepository[] gitRepos => {
                             response = gitRepos;
                             repo = response.filter((github3:GitHubRepository repository) => boolean {
-                                    //             io:println(repository);
-                                    return repository.owner.contains("wso2");
+                                    return repository.owner.contains(WSO2);
                                 });
                         }
                         github3:GitHubError err => {
-                            io:print("Commit Search Error 2 ID : " + githubCommtInfo.GITHUB_SHA_ID + "  ");
-                            io:println(err);
+                            log:printErrorCause("Error ocurred while calling Github commit searching API for support repository", err);
                         }
                         error err => {
-                            io:println(" " + err.message);
+                            log:printErrorCause("Error ocurred while searching Github commit for support repository", err);
                         }
                     }
                 }
             }
 
-            if (lengthof repo == 0) {
-                io:println(response);
-            }
+            log:printTrace("Start requesting Github commit information");
 
-   //         io:print("responsessss : ");
-     //       io:println(response);
-
-       //     github3:GitHubRepository[] repo = response.filter((github3:GitHubRepository repository) => boolean {
-       ////             io:println(repository);
-       //             return repository.owner.contains("wso2");
-       //     });
-
-         //   io:println(repo);
-           // i = i + 1;
-            //io:println(i);
             if (lengthof repo > 0) {
                 var resp = githubClient -> getCommitChanges(repo[0].name, repo[0].owner, githubCommtInfo.GITHUB_SHA_ID);
                 github3:GitHubCommitChanges response1;
@@ -177,18 +156,11 @@ function retrieveGithubCommit() returns (error?) {
                         response1 = commitChanges;
                     }
                     github3:GitHubError err => {
-                        io:print("Retrieve Commit Error ID : " + githubCommtInfo.GITHUB_SHA_ID + "  ");
-                        io:println(err);
+                        log:printErrorCause("Error ocurred while calling Github commit information retreiving API", err);
                     }
                     error err => {
-                        io:println(" " + err.message);
+                        log:printErrorCause("Error ocurred while retrieving Github commit", err);
                     }
-                }
-
-                if (response1.gitCommitStat.total == 0) {
-                    io:println(githubCommtInfo.GITHUB_SHA_ID);
-                    io:println(repo);
-                    io:println(response);
                 }
 
                 if (response1 != null) {
@@ -200,7 +172,7 @@ function retrieveGithubCommit() returns (error?) {
 
                     foreach githubfile in response1.gitCommitFiles {
                         var fileVar = dao:getFileInfo(githubfile.filename, repositoryName);
-             //           io:println(fileVar);
+
                         model:FileInfo file;
                         match fileVar {
                             model:FileInfo fileTemp => {
@@ -219,23 +191,13 @@ function retrieveGithubCommit() returns (error?) {
                                     }
                                     () => {
                                         lastFileId = lastFileId + 1;
-                                        //io:println("file index : " + ((lastFileId + 1) + lengthof fileInfoList) + "   , " + lastFileId);
-               //                         io:println("file index : " + lastFileId);
-                                        //file = {ID:(lastFileId + 1) + lengthof fileInfoList, FILE_NAME:githubfile.filename, REPOSITORY_NAME: repo[0].name};
                                         file = {ID:lastFileId, FILE_NAME:githubfile.filename, REPOSITORY_NAME: repositoryName};
-                 ///                       io:println("file index 2 : " + file.ID);
                                         fileInfoList[lengthof fileInfoList] = file;
                                     }
 
                                 }
-                                //if(file == null) {
-                                //    file = {ID:(lastFileId + 1) + lengthof fileInfoList, FILE_NAME:githubfile. filename};
-                                //    fileInfoList[lengthof fileInfoList] = file;
-                                //}
                             }
                         }
-
-
 
                         model:CommitFileInfo commitFile = {};
                         commitFile.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = githubCommtInfo.GITHUB_SHA_ID;
@@ -246,32 +208,19 @@ function retrieveGithubCommit() returns (error?) {
 
                         commitFileList[lengthof commitFileList] = commitFile;
                     }
-
-
-                    //io:println("===========================================================================");
-                    //io:println(response1);
-                    //io:println("===========================================================================");
                 }
             }
-            io:println("search count" + searchRequestCount);
+
             githubCommtInfo.IS_UPDATED = true;
             if (searchRequestCount >= 28) {
+                log:printTrace("Waiting Process complete 1 min."); // todo change log level
                 currentTimeMills = 61000 - (time:currentTime().time - startTime);
-            //    io:print("cuurent milles ");
-              //  io:println(currentTimeMills);
 
                 runtime:sleepCurrentWorker(currentTimeMills);
                 startTime = time:currentTime().time;
                 searchRequestCount = 0;
             }
-
         }
-
-        io:println(githubCommitInfoList);
-        io:println("=======================================");
-        io:println(fileInfoList);
-        io:println("=======================================");
-        io:println(commitFileList);
 
         int[] res = dao:insertFileInfo(fileInfoList);
         res = dao:updateGithubCommitInfo(githubCommitInfoList);
@@ -279,16 +228,9 @@ function retrieveGithubCommit() returns (error?) {
         githubCommitInfoList = dao:getIncompleteGithubCommitInfo();
     }
 
-
-    if (false) {
-        error e = {message:"Cleanup error"};
-    }
     return null;
 }
 
-
-
-function loggedError1(error e) {
-    io:println(e);
-    log:printErrorCause("[ERROR] cleanup failed", e);
+function loggedGithubCommitProcessError(error e) {
+    log:printErrorCause("Error occured while processing Github commit information", e);
 }
