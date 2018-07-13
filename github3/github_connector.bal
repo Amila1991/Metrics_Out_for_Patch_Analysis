@@ -15,9 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package wso2.github3;
-
 import ballerina/mime;
+import ballerina/http;
 
 documentation {Struct to define the Github connector for Rest API v3}
 public type GithubConnector object {
@@ -29,7 +28,7 @@ public type GithubConnector object {
     documentation {Search repositories info throu github commit.
         P{{id}} The commit SHA id
         returns array of GitHubRepository objects if successful else Error occured during HTTP client invocation.}
-    public function searchRepositoryViaCommit (string id) returns GitHubRepository[] | error;
+    public function searchRepositoryViaCommit (string id) returns GitHubRepository[] | error; //todo check API name
 
     documentation {Search repositories info using given github pull request.
         P{{id}} The pull request id
@@ -44,12 +43,12 @@ public type GithubConnector object {
     public function getCommitChanges (string repo, string owner, string id) returns GitHubCommitChanges | error;
 };
 
-public function GithubConnector::searchRepositoryViaCommit (string id) returns GitHubRepository[] | GitHubError {
+public function GithubConnector::searchRepositoryViaCommit (string id) returns GitHubRepository[] | GitHubError { //todo searchRepositoryViaCommit -> searchRepositoryUsingCommit
 
     endpoint http:Client clientEndpoint = self.clientEndpoint;
 
     http:Request request;
-    GitHubError  githubError= {};
+    GitHubError githubError= {};
 
     string serviceUrl = GITHUB_COMMIT_SERACH_ENDPOINT; //"/search/commits";
     string queryParams = HASH_QUERY_PARAM + id; //"q=hash:"
@@ -59,7 +58,7 @@ public function GithubConnector::searchRepositoryViaCommit (string id) returns G
 
     serviceUrl = serviceUrl + "?" + queryParams;
 
-    var httpResponse = clientEndpoint -> get(serviceUrl, request);
+    var httpResponse = clientEndpoint -> get(serviceUrl, message = request);
 
     var response = validateResponse(httpResponse);
 
@@ -88,7 +87,7 @@ public function GithubConnector::searchRepositoryViaPR (string id) returns GitHu
 
     serviceUrl = serviceUrl + "?" + queryParams;
 
-    var httpResponse = clientEndpoint -> get(serviceUrl, request);
+    var httpResponse = clientEndpoint -> get(serviceUrl, message = request);
     var response = validateResponse(httpResponse);
 
     match response {
@@ -115,7 +114,7 @@ public function GithubConnector::getCommitChanges (string repo, string owner, st
     request.setHeader(ACCEPT_HEADER, APPLICATION_VND_GITHUB_CLOAK_PREVIEW);
 
     serviceUrl = serviceUrl + pathParams;
-    var httpResponse = clientEndpoint -> get(serviceUrl, request);
+    var httpResponse = clientEndpoint -> get(serviceUrl, message = request);
     var response = validateResponse(httpResponse);
 
     match response {

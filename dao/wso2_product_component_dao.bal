@@ -15,12 +15,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package wso2.dao;
-
 import ballerina/sql;
 import ballerina/mysql;
 import ballerina/log;
-import wso2/model;
+import model as model;
 
 endpoint mysql:Client productComponentDB {
     host: config:getAsString(WSO2_COMPOMEMT_DB_HOST),
@@ -40,7 +38,7 @@ public function getProductComponent(string repository) returns int {
 
     log:printDebug("Retrieving WSO2 product name from WSO2_PRODUCT_COMPONENTS with repository name : " + repository);
 
-    sql:Parameter repositoryParam = (sql:TYPE_VARCHAR, repository);
+    sql:Parameter repositoryParam = {sqlType: sql:TYPE_VARCHAR, value: repository};
 
     var dtReturned = productComponentDB -> select( WSO2_COMPOMEMT_GET_PRODUCT_ID, model:WSO2ProductComponent, repositoryParam);
 
@@ -53,7 +51,7 @@ public function getProductComponent(string repository) returns int {
             }
         }
         error err => {
-            log:printErrorCause("Error occured while retrieving WSO2 product name from WSO2_PRODUCT_COMPONENTS", err);
+            log:printError("Error occured while retrieving WSO2 product name from WSO2_PRODUCT_COMPONENTS", err = err);
         }
     }
 

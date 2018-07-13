@@ -15,8 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package wso2.testcoverage;
-
 public type ClassTestCoverageRequestPayload {
     string fileId;
     string productId;

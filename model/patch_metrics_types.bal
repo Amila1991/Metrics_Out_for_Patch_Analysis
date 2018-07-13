@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package wso2.model;
+import ballerina/time;
 
 public type PatchInfo {
     int ID;
@@ -54,8 +54,8 @@ public type CommitFileInfo {
 public type PatchETA {
     int ID;
     string PATCH_NAME;
-    string SVN_GIT_PUBLIC;
-    string SVN_GIT_SUPPORT;
+    string? SVN_GIT_PUBLIC;
+    string? SVN_GIT_SUPPORT;
     string CLIENT;
     string SUPPORT_JIRA;
     string PRODUCT_NAME;

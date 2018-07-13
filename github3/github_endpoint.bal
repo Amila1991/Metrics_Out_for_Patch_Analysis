@@ -15,8 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package wso2.github3;
-
 import ballerina/http;
 
 documentation {Github connector configurations can be setup here
@@ -31,12 +29,12 @@ public type GithubConfiguration {
 };
 
 documentation {Github Client object
-    F{{githubConfig}} Github connector configurations
+    F{{githubConfiguration}} Github connector configurations
     F{{githubConnector}} GithubConnector Connector object
 }
 public type Client object {
     public {
-        GithubConfiguration githubConfig = {};
+        GithubConfiguration githubConfiguration = {};
         GithubConnector githubConnector = new;
     }
 
@@ -45,25 +43,26 @@ public type Client object {
     }
     public function init (GithubConfiguration githubConfig);
 
-    documentation {Return the Github connector client
-        returns Github connector client
-    }
-    public function getClient () returns GithubConnector;
+    //documentation {Return the Github connector client
+    //    returns Github connector client
+    //}
+    //public function getClient () returns GithubConnector;
+    //
+
+    documentation { Return the GitHub connector client
+            R{{cc}} - GitHub client
+        }
+    public function getCallerActions() returns GithubConnector;
 };
 
-documentation {Set the client configuration}
-public function <GithubConfiguration githubConfig> GithubConfiguration () {
-    githubConfig.clientConfig = {};
-}
 
 public function Client::init (GithubConfiguration githubConfig) {
     githubConfig.uri = "https://api.github.com";
     self.githubConnector.accessToken = githubConfig.accessToken;
-    githubConfig.clientConfig.targets = [{url:githubConfig.uri}];
+    githubConfig.clientConfig.url = githubConfig.uri;
     self.githubConnector.clientEndpoint.init(githubConfig.clientConfig);
-
 }
 
-public function Client::getClient() returns GithubConnector {
+public function Client::getCallerActions() returns GithubConnector {
     return self.githubConnector;
 }

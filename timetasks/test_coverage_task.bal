@@ -15,16 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package wso2.timetasks;
-
 import ballerina/task;
 import ballerina/log;
 import ballerina/math;
 import ballerina/time;
 import ballerina/config;
-import wso2/model;
-import wso2/dao;
-import wso2/testcoverage;
+import model;
+import dao;
+import testcoverage;
 
 public function testCoverageAppointment() {
     log:printInfo("Starting file statistic processing task appointment");
@@ -90,8 +88,8 @@ public function getJavaClassesTestCoverage(string updatedDate) {
 
 }
 
-function loggedTetsCoverageProcessError(error e) {
-    log:printErrorCause("Error occured while requesting test coverage and java class issues", e);
+function loggedTetsCoverageProcessError(error err) {
+    log:printError("Error occured while requesting test coverage and java class issues", err = err);
 }
 
 
@@ -138,7 +136,7 @@ function processIssues(int id, string[] issuesArr, model:Issue[] issueList) retu
             issue.FILE_STATS_FILE_INFO_ID = id;
             issue.ERROR_CODE = issueSplit[0];
             issue.DESCRIPTION = issueSplit[1];
-            issue.LINE = issueSplit[lengthof issueSplit - 1].subString(1, issueSplit[lengthof issueSplit - 1].length() - 1).split(" ")[1];
+            issue.LINE = issueSplit[lengthof issueSplit - 1].substring(1, issueSplit[lengthof issueSplit - 1].length() - 1).split(" ")[1];
 
             issueList[lengthof issueList] = issue;
         }

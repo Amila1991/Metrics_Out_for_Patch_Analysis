@@ -15,22 +15,33 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package wso2.dao;
-
 import ballerina/sql;
 import ballerina/mysql;
 import ballerina/config;
 import ballerina/log;
-import wso2/model;
+import model as model;
+
+
+
+//endpoint mysql:Client pmtDB {
+//    host: config:getAsString(PMT_DB_HOST),
+//    port: config:getAsInt(PMT_DB_PORT),
+//    name: config:getAsString(PMT_DB_NAME),
+//    username: config:getAsString(PMT_DB_USER),
+//    password:config:getAsString(PMT_DB_PASSWORD),
+//    poolOptions:{maximumPoolSize: config:getAsInt(PMT_DB_MAX_POOL_SIZE)},
+//    dbOptions:{useSSL:false}
+//};
+
 
 endpoint mysql:Client pmtDB {
-    host: config:getAsString(PMT_DB_HOST),
-    port: config:getAsInt(PMT_DB_PORT),
-    name: config:getAsString(PMT_DB_NAME),
-    username: config:getAsString(PMT_DB_USER),
-    password:config:getAsString(PMT_DB_PASSWORD),
-    poolOptions:{maximumPoolSize: config:getAsInt(PMT_DB_MAX_POOL_SIZE)},
-    dbOptions:{useSSL:false}
+    host: "localhost",
+    port: 3306,
+    name: "pmtdb",
+    username: "root",
+    password: "password123",
+    poolOptions: { maximumPoolSize: 5 },
+    dbOptions: { useSSL: false }
 };
 
 documentation {Retrieve patches from Patch ETA and Patch Queue records.
@@ -41,7 +52,7 @@ public function getPatchETARecords(int startIndex) returns model:PatchETA[] {
 
     log:printDebug("Retrieving patchs from Patch ETA");
 
-    sql:Parameter startIndexParam = (sql:TYPE_INTEGER, startIndex);
+    sql:Parameter startIndexParam = {sqlType: sql:TYPE_INTEGER, value: startIndex};
 
     var dtReturned = pmtDB -> select(PMT_PATCH_RECORD_SELECT_QUERY, model:PatchETA, startIndexParam);
 
@@ -54,7 +65,7 @@ public function getPatchETARecords(int startIndex) returns model:PatchETA[] {
             }
         }
         error err => {
-            log:printErrorCause("Error occured while retrieving patchs from Patch ETA", err);
+            log:printError("Error occured while retrieving patchs from Patch ETA", err = err);
         }
     }
 

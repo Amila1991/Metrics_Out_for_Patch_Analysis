@@ -15,7 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package wso2.github3;
 
 import ballerina/http;
 import ballerina/io;
@@ -29,12 +28,8 @@ function isContainRepo(GitHubRepository[] repositories,GitHubRepository reposito
     return false;
 }
 
-function validateResponse(http:Response | http:HttpConnectorError httpResponse) returns json | GitHubError {
+function validateResponse(http:Response|error httpResponse) returns json | GitHubError {
     match httpResponse {
-        http:HttpConnectorError err => {
-            GitHubError githubError = {message:err.message, statusCode:err.statusCode, cause: err.cause};
-            return githubError;
-        }
         http:Response response => {
             if (response.statusCode < 200|| response.statusCode >= 300) {
                 GitHubError githubError = {message:response.reasonPhrase, statusCode:response.statusCode};
@@ -42,7 +37,7 @@ function validateResponse(http:Response | http:HttpConnectorError httpResponse) 
             }
             var GithubJSONResponse = response.getJsonPayload();
             match GithubJSONResponse {
-                http:PayloadError err => {
+                error err => {
                     GitHubError githubError = {message:err.message, cause: err.cause};
                     return githubError;
                 }
@@ -50,6 +45,10 @@ function validateResponse(http:Response | http:HttpConnectorError httpResponse) 
                     return jsonResponse;
                 }
             }
+        }
+        error err => {
+            GitHubError githubError = {message:err.message, cause: err.cause};
+            return githubError;
         }
     }
 }

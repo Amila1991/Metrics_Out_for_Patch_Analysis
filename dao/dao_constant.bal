@@ -15,8 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package wso2.dao;
-
 @final string PMT_DB_HOST = "pmt.database.host";
 @final string PMT_DB_PORT = "pmt.database.port";
 @final string PMT_DB_NAME = "pmt.database.name";

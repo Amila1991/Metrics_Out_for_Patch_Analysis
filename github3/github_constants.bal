@@ -15,14 +15,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package wso2.services;
+@final string GITHUB_HOST = "https://api.github.com";
 
-import ballerina/http;
+@final string GITHUB_COMMIT_SERACH_ENDPOINT = "/search/commits";
+@final string GITHUB_PR_SERACH_ENDPOINT = "/search/issues";
 
-@final public http:CorsConfig SERVICES_CORS_PARAMS = {
-    allowOrigins:["*"],
-    allowCredentials:false,
-    allowHeaders:["Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept", "CORELATION_ID"],
-    exposeHeaders:["X-CUSTOM-HEADER"],
-    maxAge:84900
-};
+@final string AUTHORIZATION_HEADER = "Authorization";
+@final string ACCEPT_HEADER = "Accept";
+@final string BEARER_TOKEN = "Bearer ";
+@final string APPLICATION_VND_GITHUB_CLOAK_PREVIEW = "application/vnd.github.cloak-preview";
+@final string HASH_QUERY_PARAM = "q=hash:";
+
+

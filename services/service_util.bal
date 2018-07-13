@@ -15,35 +15,33 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package wso2.services;
-
-public function generatePackageName(string[] splitedFileName) returns string {
+public function generatePackageName(string[] fileNameParts) returns string {
     int count = 0;
-    while (count < (lengthof splitedFileName - 1) && !splitedFileName[count].equalsIgnoreCase("org")) {
+    while (count < (lengthof fileNameParts - 1) && !fileNameParts[count].equalsIgnoreCase("org")) {
         count = count + 1;
     }
 
-    if (count == (lengthof splitedFileName - 1)) {
+    if (count == (lengthof fileNameParts - 1)) {
         count = 0;
-        while (count < (lengthof splitedFileName - 1) && !splitedFileName[count].equalsIgnoreCase("java")) {
+        while (count < (lengthof fileNameParts - 1) && !fileNameParts[count].equalsIgnoreCase("java")) {
             count = count + 1;
         }
         count = count + 1;
     }
 
     string packageName = "";
-    if (count >= (lengthof splitedFileName - 1)) {
+    if (count >= (lengthof fileNameParts - 1)) {
         count = 0;
-        while (count < (lengthof splitedFileName - 1) && !splitedFileName[count].contains("org.")) {
+        while (count < (lengthof fileNameParts - 1) && !fileNameParts[count].contains("org.")) {
             count = count + 1;
         }
-        packageName = splitedFileName[count].replaceAll("[.]+", "/");
+        packageName = fileNameParts[count].replaceAll("[.]+", "/");
     } else {
-        packageName = splitedFileName[count];
+        packageName = fileNameParts[count];
 
-        while (count < lengthof splitedFileName - 2) {
+        while (count < lengthof fileNameParts - 2) {
             count = count + 1;
-            packageName = packageName + "/" + splitedFileName[count];
+            packageName = packageName + "/" + fileNameParts[count];
         }
     }
     return packageName;
