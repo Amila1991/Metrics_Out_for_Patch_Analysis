@@ -1,30 +1,49 @@
+//
+// Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+//
+// WSO2 Inc. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package wso2.dao;
 
 import ballerina/sql;
-import ballerina/io;
+import ballerina/mysql;
+import ballerina/config;
 import ballerina/log;
 import wso2/model;
 
-endpoint sql:Client pmtDB {
-    url: "mysql://localhost:3306/pmtdb?useSSL=false",
-    username:"root",
-    password:"password123",
-    poolOptions:{maximumPoolSize:5}
+endpoint mysql:Client pmtDB {
+    host: config:getAsString(PMT_DB_HOST),
+    port: config:getAsInt(PMT_DB_PORT),
+    name: config:getAsString(PMT_DB_NAME),
+    username: config:getAsString(PMT_DB_USER),
+    password:config:getAsString(PMT_DB_PASSWORD),
+    poolOptions:{maximumPoolSize: config:getAsInt(PMT_DB_MAX_POOL_SIZE)},
+    dbOptions:{useSSL:false}
 };
 
-
-// Retrieve patches from Patch ETA and Patch Queue records.
-// startIndex - Patch ID whch is used to start position
+documentation {Retrieve patches from Patch ETA and Patch Queue records.
+        P{{startIndex}} Patch id whch is used to start position
+        returns Array of PatchETA objects.
+}
 public function getPatchETARecords(int startIndex) returns model:PatchETA[] {
 
     log:printDebug("Retrieving patchs from Patch ETA");
 
-    io:println(startIndex);
     sql:Parameter startIndexParam = (sql:TYPE_INTEGER, startIndex);
 
-    var dtReturned = pmtDB -> select(
-                                  "SELECT pe.ID, pe.PATCH_NAME, pe.SVN_GIT_PUBLIC, pe.SVN_GIT_SUPPORT, pq.CLIENT, pq.SUPPORT_JIRA, pq.PRODUCT_NAME, pq.REPORT_DATE FROM PATCH_ETA pe JOIN PATCH_QUEUE pq ON pq.ID = pe.PATCH_QUEUE_ID WHERE pe.ID > ? AND pe.LC_STATE LIKE 'Released%'",
-                                  model:PatchETA, startIndexParam);
+    var dtReturned = pmtDB -> select(PMT_PATCH_RECORD_SELECT_QUERY, model:PatchETA, startIndexParam);
 
     model:PatchETA[] patchETAList = [];
     match dtReturned{
@@ -40,5 +59,4 @@ public function getPatchETARecords(int startIndex) returns model:PatchETA[] {
     }
 
    return patchETAList;
-
 }

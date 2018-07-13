@@ -1,54 +1,59 @@
+//
+// Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+//
+// WSO2 Inc. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package wso2.dao;
 
 import ballerina/sql;
 import ballerina/mysql;
-import ballerina/io;
 import ballerina/log;
 import wso2/model;
 
-
-//endpoint sql:Client pmtDB {
-//    url:"mysql://localhost:3306/WSO2_PRODUCT_COMPONENTS_wso2dev?useSSL=false",
-//    username:"root",
-//    password:"password123",
-//    poolOptions:{maximumPoolSize:5}
-//};
-
 endpoint mysql:Client productComponentDB {
-    host:"localhost",
-    port:3306,
-    name:"WSO2_PRODUCT_COMPONENTS_wso2dev",
-    username:"root",
-    password:"password123",
-    poolOptions:{maximumPoolSize:5},
+    host: config:getAsString(WSO2_COMPOMEMT_DB_HOST),
+    port: config:getAsInt(WSO2_COMPOMEMT_DB_PORT),
+    name: config:getAsString(WSO2_COMPOMEMT_DB_NAME),
+    username: config:getAsString(WSO2_COMPOMEMT_DB_USER),
+    password:config:getAsString(WSO2_COMPOMEMT_DB_PASSWORD),
+    poolOptions:{maximumPoolSize: config:getAsInt(WSO2_COMPOMEMT_DB_MAX_POOL_SIZE)},
     dbOptions:{useSSL:false}
 };
 
-// Retrieve patches from Patch ETA and Patch Queue records.
-// startIndex - Patch ID whch is used to start position
+documentation {GET file inofrmation by file id
+        P{{repository}} Repository name
+        returns int as a product compoennt id.
+}
 public function getProductComponent(string repository) returns int {
 
-    log:printDebug("Retrieving WSO2 product name from WSO2_PRODUCT_COMPONENTS_wso2dev with repository name : " + repository);
+    log:printDebug("Retrieving WSO2 product name from WSO2_PRODUCT_COMPONENTS with repository name : " + repository);
 
-   // io:println(repository);
     sql:Parameter repositoryParam = (sql:TYPE_VARCHAR, repository);
 
-    var dtReturned = productComponentDB -> select( "SELECT REPO_NAME,PRODUCT_ID FROM PRODUCT_REPOS WHERE REPO_NAME = ?",
-                                  model:WSO2ProductComponent, repositoryParam);
+    var dtReturned = productComponentDB -> select( WSO2_COMPOMEMT_GET_PRODUCT_ID, model:WSO2ProductComponent, repositoryParam);
 
     match dtReturned{
         table product_com_id => {
             if (product_com_id.hasNext()) {
-
-                var rs = check < model:WSO2ProductComponent> product_com_id.getNext();
-
-               // io:println(rs);
+                var rs = check <model:WSO2ProductComponent> product_com_id.getNext();
                 product_com_id.close();
                 return rs.PRODUCT_ID;
             }
         }
         error err => {
-            log:printErrorCause("Error occured while retrieving WSO2 product name from WSO2_PRODUCT_COMPONENTS_wso2dev", err);
+            log:printErrorCause("Error occured while retrieving WSO2 product name from WSO2_PRODUCT_COMPONENTS", err);
         }
     }
 

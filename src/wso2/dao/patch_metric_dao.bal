@@ -1,33 +1,49 @@
+//
+// Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+//
+// WSO2 Inc. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package wso2.dao;
 
 import ballerina/sql;
 import ballerina/mysql;
-import ballerina/io;
 import ballerina/config;
 import ballerina/log;
 import wso2/model;
 
 endpoint mysql:Client patchMetricDB {
-    host:"localhost",
-    port:3306,
-    name:"patch_metrics_db2",
-    username:"root",
-    password:"password123",
-    poolOptions:{maximumPoolSize:5},
+    host:config:getAsString(PATCH_METRICS_DB_HOST),
+    port:config:getAsInt(PATCH_METRICS_DB_PORT),
+    name:config:getAsString(PATCH_METRICS_DB_NAME),
+    username:config:getAsString(PATCH_METRICS_DB_USER),
+    password:config:getAsString(PATCH_METRICS_DB_PASSWORD),
+    poolOptions:{maximumPoolSize:config:getAsInt(PATCH_METRICS_DB_MAX_POOL_SIZE)},
     dbOptions:{useSSL:false}
 };
 
-
-@final string[] exculdeFiles = config:getAsString("exclude.files").split(",");
-
-// Insert list of patch information enteries in to database.
+documentation {Insert list of patch information entries.
+        P{{patchInfoList}} Array of patch information
+        returns Array of int which represent record inserting status.
+}
 public function insertPatchInfo(model:PatchInfo[] patchInfoList) returns int[] {
 
-    log:printDebug("Inserting patch info entry list");
+    log:printDebug("Inserting patch information");
 
     int[] res = [];
     foreach i, patchInfo in patchInfoList {
-        log:printTrace("Inserting patch info entry with patch info id : " + patchInfo.ID);
+        log:printTrace("Inserting patch information with patch info id : " + patchInfo.ID);
 
         sql:Parameter idParam = (sql:TYPE_INTEGER, patchInfo.ID);
         sql:Parameter patchNameParam = (sql:TYPE_VARCHAR, patchInfo.PATCH_NAME);
@@ -35,15 +51,15 @@ public function insertPatchInfo(model:PatchInfo[] patchInfoList) returns int[] {
         sql:Parameter supportJIRAParam = (sql:TYPE_VARCHAR, patchInfo.SUPPORT_JIRA);
         sql:Parameter reportDateParam = (sql:TYPE_DATE, patchInfo.REPORT_DATE);
         sql:Parameter productComIdParam = (sql:TYPE_INTEGER, patchInfo.PRODUCT_COMPONENT_ID);
-        var rst = patchMetricDB -> update(
-                                       "INSERT INTO PATCH_INFO (ID,PATCH_NAME,CLIENT,SUPPORT_JIRA,REPORT_DATE,PRODUCT_COMPONENT_ID) VALUES (?,?,?,?,?,?)",
-                                       idParam, patchNameParam, clientParam, supportJIRAParam, reportDateParam, productComIdParam);
+
+        var rst = patchMetricDB -> update(PATCH_METRICS_INSERT_PATCH_INFO, idParam, patchNameParam, clientParam,
+            supportJIRAParam, reportDateParam, productComIdParam);
         match rst {
             int status => {
                 res[i] = status;
             }
             error err => {
-                log:printErrorCause("Error occured while inserting patch info entry with patch info id : " + patchInfo.ID, err);
+                log:printErrorCause("Error occured while inserting patch information with patch info id : " + patchInfo.ID, err);
             }
         }
     }
@@ -51,13 +67,17 @@ public function insertPatchInfo(model:PatchInfo[] patchInfoList) returns int[] {
     return res;
 }
 
+documentation {Insert list of Github commit information entries.
+        P{{githubCommitInfoList}} Array of commit information
+        returns Array of int which represent record inserting status.
+}
 public function insertGithubCommitInfo(model:GithubCommitInfo[] githubCommitInfoList) returns int[] {
 
-    log:printDebug("Inserting github commit info entry list");
+    log:printDebug("Inserting github commit information");
 
     int[] res = [];
     foreach i, githubCommitInfo in githubCommitInfoList {
-        log:printTrace("Inserting github commit info entry with github id : " + githubCommitInfo.GITHUB_SHA_ID);
+        log:printTrace("Inserting github commit information with github id : " + githubCommitInfo.GITHUB_SHA_ID);
 
         sql:Parameter githubSHAIdParam = (sql:TYPE_VARCHAR, githubCommitInfo.GITHUB_SHA_ID);
         sql:Parameter githubSHAIdRepoTypeParam = (sql:TYPE_VARCHAR, githubCommitInfo.GITHUB_SHA_ID_REPO_TYPE);
@@ -65,39 +85,49 @@ public function insertGithubCommitInfo(model:GithubCommitInfo[] githubCommitInfo
         sql:Parameter additionsParam = (sql:TYPE_INTEGER, githubCommitInfo.ADDITIONS);
         sql:Parameter deletionsParam = (sql:TYPE_INTEGER, githubCommitInfo.DELETIONS);
         sql:Parameter isUpdatedParam = (sql:TYPE_TINYINT, <int>githubCommitInfo.IS_UPDATED);
-        var rst = patchMetricDB ->
-        update("INSERT INTO GITHUB_COMMIT_INFO (GITHUB_SHA_ID,GITHUB_SHA_ID_REPO_TYPE,TOTAL_CHANGES,ADDITIONS,DELETIONS,IS_UPDATED) VALUES (?,?,?,?,?,?)",
-            githubSHAIdParam, githubSHAIdRepoTypeParam, totalChangesParam, additionsParam, deletionsParam, isUpdatedParam);
+
+        var rst = patchMetricDB -> update(PATCH_METRICS_INSERT_GITHUB_COMMIT_INFO, githubSHAIdParam,
+            githubSHAIdRepoTypeParam, totalChangesParam, additionsParam, deletionsParam, isUpdatedParam);
 
         match rst {
             int status => {
                 res[i] = status;
             }
             error err => {
-                log:printErrorCause("Error occured while inserting github commit info entry with github id : " + githubCommitInfo.GITHUB_SHA_ID, err);
+                log:printErrorCause("Error occured while inserting github commit information with github id : " +
+                        githubCommitInfo.GITHUB_SHA_ID, err);
             }
         }
-
     }
 
     return res;
 }
 
+documentation {Insert list of patch related commit entries.
+        P{{patchCommitInfoList}} Array of patch related commit
+        returns Array of int which represent record inserting status.
+}
 public function insertPatchCommitInfo(model:PatchCommitInfo[] patchCommitInfoList) returns int[] {
+
+    log:printDebug("Inserting patch related commit");
+
     int[] res = [];
 
     foreach i, patchCommitInfo in patchCommitInfoList {
+        log:printTrace("Inserting patch related commit with patch id : " + patchCommitInfo.PATCH_INFO_ID);
+
         sql:Parameter githubSHAIdParam = (sql:TYPE_VARCHAR, patchCommitInfo.GITHUB_COMMIT_INFO_GITHUB_SHA_ID);
         sql:Parameter patchIdParam = (sql:TYPE_INTEGER, patchCommitInfo.PATCH_INFO_ID);
-        var rst = patchMetricDB -> update("INSERT INTO PATCH_RELATED_COMMITS (GITHUB_COMMIT_INFO_GITHUB_SHA_ID,PATCH_INFO_ID) VALUES (?,?)",
-            githubSHAIdParam, patchIdParam);
+
+        var rst = patchMetricDB -> update(PATCH_METRICS_INSERT_PATCH_COMMIT_INFO, githubSHAIdParam, patchIdParam);
 
         match rst {
             int status => {
                 res[i] = status;
             }
             error err => {
-                io:println("Patch Commit info insertion failed:" + err.message);
+                log:printErrorCause("Error occured while inserting patch related commit with patch id : " +
+                        patchCommitInfo.PATCH_INFO_ID, err);
             }
         }
 
@@ -106,26 +136,36 @@ public function insertPatchCommitInfo(model:PatchCommitInfo[] patchCommitInfoLis
     return res;
 }
 
-
+documentation {Insert list of file changes entries.
+        P{{commitFileInfoList}} Array of file changes
+        returns Array of int which represent record inserting status.
+}
 public function insertGithubCommitFileInfo(model:CommitFileInfo[] commitFileInfoList) returns int[] {
+
+    log:printDebug("Inserting file changes");
+
     int[] res = [];
 
     foreach i, commitFileInfo in commitFileInfoList {
+        log:printTrace("Inserting file changes with file id : " + commitFileInfo.FILE_INFO_ID +
+                " & github commit id : " + commitFileInfo.GITHUB_COMMIT_INFO_GITHUB_SHA_ID);
+
         sql:Parameter githubCommitSHAIdParam = (sql:TYPE_VARCHAR, commitFileInfo.GITHUB_COMMIT_INFO_GITHUB_SHA_ID);
         sql:Parameter fileSHAIdParam = (sql:TYPE_INTEGER, commitFileInfo.FILE_INFO_ID);
         sql:Parameter totalChangesParam = (sql:TYPE_INTEGER, commitFileInfo.TOTAL_CHANGES);
         sql:Parameter additionsParam = (sql:TYPE_INTEGER, commitFileInfo.ADDITIONS);
         sql:Parameter deletionsParam = (sql:TYPE_INTEGER, commitFileInfo.DELETIONS);
-        var rst = patchMetricDB ->
-        update("INSERT INTO FILE_CHANGES (GITHUB_COMMIT_INFO_GITHUB_SHA_ID,FILE_INFO_ID,TOTAL_CHANGES,ADDITIONS,DELETIONS) VALUES (?,?,?,?,?)",
-            githubCommitSHAIdParam, fileSHAIdParam, totalChangesParam, additionsParam, deletionsParam);
+
+        var rst = patchMetricDB -> update(PATCH_METRICS_INSERT_FILE_CHANGES, githubCommitSHAIdParam, fileSHAIdParam,
+            totalChangesParam, additionsParam, deletionsParam);
 
         match rst {
             int status => {
                 res[i] = status;
             }
             error err => {
-                io:println("Committed File insertion failed:" + err.message);
+                log:printErrorCause("Error occured while inserting file changes with file id : " +
+                        commitFileInfo.FILE_INFO_ID + " & github commit id : " + commitFileInfo.GITHUB_COMMIT_INFO_GITHUB_SHA_ID, err);
             }
         }
     }
@@ -133,50 +173,67 @@ public function insertGithubCommitFileInfo(model:CommitFileInfo[] commitFileInfo
     return res;
 }
 
-
+documentation {Update github commits to complete github commit information
+        P{{githubCommitInfoList}} Array of commit information
+        returns Array of int which represent record inserting status.
+}
 public function updateGithubCommitInfo(model:GithubCommitInfo[] githubCommitInfoList) returns int[] {
+
+    log:printDebug("Updating github commits to complete github information");
+
     int[] res = [];
 
     foreach i, githubCommitInfo in githubCommitInfoList {
+        log:printTrace("Updating github commits with github id : " + githubCommitInfo.GITHUB_SHA_ID);
+
         sql:Parameter totalChangesParam = (sql:TYPE_INTEGER, githubCommitInfo.TOTAL_CHANGES);
         sql:Parameter additionsParam = (sql:TYPE_INTEGER, githubCommitInfo.ADDITIONS);
         sql:Parameter deletionsParam = (sql:TYPE_INTEGER, githubCommitInfo.DELETIONS);
         sql:Parameter isUpdatedParam = (sql:TYPE_TINYINT, <int>githubCommitInfo.IS_UPDATED);
         sql:Parameter githubSHAIdParam = (sql:TYPE_VARCHAR, githubCommitInfo.GITHUB_SHA_ID);
-        var rst = patchMetricDB ->
-        update("UPDATE GITHUB_COMMIT_INFO SET TOTAL_CHANGES = ?, ADDITIONS = ?, DELETIONS= ?, IS_UPDATED = ? WHERE GITHUB_SHA_ID = ?",
-            totalChangesParam, additionsParam, deletionsParam, isUpdatedParam, githubSHAIdParam);
+
+        var rst = patchMetricDB -> update(PATCH_METRICS_UPDATE_GITHUB_COMMIT_INFO, totalChangesParam, additionsParam,
+            deletionsParam, isUpdatedParam, githubSHAIdParam);
+
         match rst {
             int status => {
                 res[i] = status;
             }
             error err => {
-                io:println("Commit info modification failed:" + err.message);
+                log:printErrorCause("Error occured while updating github commit to complete github information with github id : "
+                        + githubCommitInfo.GITHUB_SHA_ID, err);
             }
         }
-
     }
 
     return res;
 }
 
-
+documentation {Insert file information
+        P{{fileInfoList}} Array of file information
+        returns Array of int which represent record inserting status.
+}
 public function insertFileInfo(model:FileInfo[] fileInfoList) returns int[] {
+
+    log:printDebug("Inserting file information");
+
     int[] res = [];
 
     foreach i, file in fileInfoList {
+        log:printTrace("Inserting file information with file id : " + file.ID);
+
         sql:Parameter fileIdParam = (sql:TYPE_INTEGER, file.ID);
         sql:Parameter fileNameParam = (sql:TYPE_VARCHAR, file.FILE_NAME);
         sql:Parameter repositoryParam = (sql:TYPE_VARCHAR, file.REPOSITORY_NAME);
-        var rst = patchMetricDB ->
-        update("INSERT INTO FILE_INFO (ID,FILE_NAME,REPOSITORY_NAME) VALUES (?,?,?)", fileIdParam, fileNameParam, repositoryParam);
+
+        var rst = patchMetricDB -> update(PATCH_METRICS_INSERT_FILE_INFO, fileIdParam, fileNameParam, repositoryParam);
 
         match rst {
             int status => {
                 res[i] = status;
             }
             error err => {
-                io:println("File info insertion failed:" + err.message);
+                log:printErrorCause("Error occured while inserting file information with file id : " + file.ID, err);
             }
         }
     }
@@ -184,12 +241,14 @@ public function insertFileInfo(model:FileInfo[] fileInfoList) returns int[] {
     return res;
 }
 
+documentation {Insert file statistics including test coverage
+        P{{fileStatsList}} Array of file statistics
+        returns Array of int which represent record inserting status.
+}
 public function insertFileStats(model:FileStats[] fileStatsList) returns int[] {
 
     log:printDebug("Inserting file statistics");
 
-    io:print("list : ");
-    io:println(fileStatsList);
     int[] res = [];
     foreach i, fileStats in fileStatsList {
         log:printTrace("Inserting file statistics with file id : " + fileStats.FILE_INFO_ID);
@@ -199,17 +258,16 @@ public function insertFileStats(model:FileStats[] fileStatsList) returns int[] {
         sql:Parameter coveredLinesParam = (sql:TYPE_INTEGER, fileStats.TEST_COVERED_LINES);
         sql:Parameter missedLinesParam = (sql:TYPE_INTEGER, fileStats.TEST_MISSED_LINES);
 
-        var rst = patchMetricDB ->
-        update("INSERT INTO FILE_STATS (FILE_INFO_ID,UPDATED_DATE,TEST_COVERED_LINES,TEST_MISSED_LINES) VALUES (?,?,?,?) ON " +
-                "DUPLICATE KEY UPDATE UPDATED_DATE=VALUES(UPDATED_DATE), TEST_COVERED_LINES=VALUES(TEST_COVERED_LINES), TEST_MISSED_LINES=VALUES(TEST_MISSED_LINES)",
-            fileIdParam, updatedDateParam, coveredLinesParam, missedLinesParam);
+        var rst = patchMetricDB -> update(PATCH_METRICS_INSERT_FILE_STATS, fileIdParam, updatedDateParam,
+            coveredLinesParam, missedLinesParam);
 
         match rst {
             int status => {
                 res[i] = status;
             }
             error err => {
-                log:printErrorCause("Error occured while inserting  file statistics with file id : " + fileStats.FILE_INFO_ID, err);
+                log:printErrorCause("Error occured while inserting file statistics with file id : " +
+                        fileStats.FILE_INFO_ID, err);
             }
         }
     }
@@ -217,8 +275,11 @@ public function insertFileStats(model:FileStats[] fileStatsList) returns int[] {
     return res;
 }
 
+documentation {Insert file issues which given by finbugs
+        P{{issueList}} Array of issue
+        returns Array of int which represent record inserting status.
+}
 public function insertFileIssues(model:Issue[] issueList) returns int[] {
-
 
     log:printDebug("Inserting files issues");
 
@@ -231,16 +292,17 @@ public function insertFileIssues(model:Issue[] issueList) returns int[] {
         sql:Parameter lineParam = (sql:TYPE_VARCHAR, issue.LINE);
         sql:Parameter descriptionParam = (sql:TYPE_VARCHAR, issue.DESCRIPTION);
         sql:Parameter errorCodeParam = (sql:TYPE_VARCHAR, issue.ERROR_CODE);
-        var rst = patchMetricDB ->
-        update("INSERT INTO ISSUE (ID, FILE_STATS_FILE_INFO_ID,LINE,DESCRIPTION,ERROR_CODE) VALUES (?,?,?,?,?)",
-            IdParam, fileIdParam, lineParam, descriptionParam, errorCodeParam);
+
+        var rst = patchMetricDB -> update(PATCH_METRICS_INSERT_ISSUES, IdParam, fileIdParam, lineParam,
+            descriptionParam, errorCodeParam);
 
         match rst {
             int status => {
                 res[i] = status;
             }
             error err => {
-                log:printErrorCause("Error occured while inserting files issues with file id : " + issue.FILE_STATS_FILE_INFO_ID, err);
+                log:printErrorCause("Error occured while inserting files issues with file id : " +
+                        issue.FILE_STATS_FILE_INFO_ID, err);
             }
         }
 
@@ -249,36 +311,41 @@ public function insertFileIssues(model:Issue[] issueList) returns int[] {
     return res;
 }
 
+documentation {clear file issues table. Remove all entries in issues table
+        returns Int which represent clear process success or not.
+}
 public function clearFileIssues() returns int {
-    int res;
 
-    var rst = patchMetricDB ->
-    update("DELETE FROM ISSUE");
+    log:printDebug("Removing files issues");
+
+    var rst = patchMetricDB -> update(PATCH_METRICS_DELETE_ISSUES);
+
+    int res;
     match rst {
         int status => {
             res = status;
         }
         error err => {
-            io:println("Commit info modification failed:" + err.message);
+            log:printErrorCause("Error occured while Removing file issues", err);
         }
     }
-
-    io:println("clear issues");
 
     return res;
 }
 
+documentation {Retrieve last patch information entry id.
+        returns Int which represent last patch information entry id.
+}
 public function getLastPatchInfoId() returns int {
 
-    log:printDebug("Retrieve last patch info id");
+    log:printDebug("Retrieving last patch info id");
 
-    var dtReturned = patchMetricDB -> select("SELECT ID FROM PATCH_INFO ORDER BY ID DESC LIMIT 1", model:PatchInfo);
+    var dtReturned = patchMetricDB -> select(PATCH_METRICS_GET_LAST_PATCH_ID, model:PatchInfo);
 
     match dtReturned {
         table patchtable => {
             if (patchtable.hasNext()) {
                 var rs = check <model:PatchInfo>patchtable.getNext();
-                io:println(rs.ID);
                 patchtable.close();
                 return rs.ID;
             }
@@ -288,305 +355,225 @@ public function getLastPatchInfoId() returns int {
         }
     }
 
-
     return 0;
 }
 
-
+documentation {Retrieve incompleted commits.
+        returns Array of GithubCommitInfo object.
+}
 public function getIncompleteGithubCommitInfo() returns model:GithubCommitInfo[] {
-    var dtReturned = patchMetricDB ->
-    select("SELECT GITHUB_SHA_ID,GITHUB_SHA_ID_REPO_TYPE,TOTAL_CHANGES,ADDITIONS,DELETIONS,IS_UPDATED FROM GITHUB_COMMIT_INFO WHERE IS_UPDATED = 0 ORDER BY GITHUB_SHA_ID LIMIT 30",
-        model:GithubCommitInfo);
-    table dt = check dtReturned;
+
+    log:printDebug("Retrieving incompleted Github commit information");
+
+    var dtReturned = patchMetricDB -> select(PATCH_METRICS_GET_INCOMPLETED_COMMITS, model:GithubCommitInfo);
 
     model:GithubCommitInfo[] githubCommitInfoList = [];
-
-    while (dt.hasNext()) {
-        var rs = check <model:GithubCommitInfo>dt.getNext();
-        githubCommitInfoList[lengthof githubCommitInfoList] = rs;
+    match dtReturned {
+        table commitTable => {
+            while (commitTable.hasNext()) {
+                var rs = check <model:GithubCommitInfo>commitTable.getNext();
+                githubCommitInfoList[lengthof githubCommitInfoList] = rs;
+            }
+        }
+        error err => {
+            log:printErrorCause("Error occured while retrieving incompleted Github commit information", err);
+        }
     }
 
     return githubCommitInfoList;
 }
 
-
+documentation {Retrieve file information using file name and repository.
+        P{{filename}} File name
+        P{{repository}} Repository
+        returns If found File information according to the given parameters, then return FileInfo object other wise return null.
+}
 public function getFileInfo(string filename, string repository) returns (model:FileInfo?) {
+
+    log:printDebug("Retrieving file information by filename : " + filename + " & repository : " + repository);
+
     sql:Parameter fileNameParam = (sql:TYPE_VARCHAR, filename);
     sql:Parameter repositoryParam = (sql:TYPE_VARCHAR, repository);
 
-    var dtReturned = patchMetricDB -> select("SELECT * FROM FILE_INFO WHERE FILE_NAME = ? AND REPOSITORY_NAME = ?", model:FileInfo, fileNameParam, repositoryParam);
-    table dt = check dtReturned;
+    var dtReturned = patchMetricDB -> select(PATCH_METRICS_GET_FILES_INFO, model:FileInfo, fileNameParam, repositoryParam);
 
-    if (dt.hasNext()) {
-        var rs = check <model:FileInfo>dt.getNext();
-        dt.close();
-        return rs;
+    match dtReturned {
+        table fileTable => {
+            if (fileTable.hasNext()) {
+                var rs = check <model:FileInfo>fileTable.getNext();
+                fileTable.close();
+                return rs;
+            }
+        }
+        error err => {
+            log:printErrorCause("Error occured while retrieving file information by filename : " +
+                    filename + " & repository : " + repository, err);
+        }
     }
 
     return;
 }
 
-
-
+documentation {Get product component id according to the given product name.
+        P{{productName}} Product name
+        returns Int which represent product component id.
+}
 public function getProductCompId(string productName) returns int {
-
-    log:printDebug("Retrieve product component id");
-    io:println("product Nmae : " + productName);
+    log:printDebug("Retrieving product component id by prodyct name : " + productName);
 
     sql:Parameter productNameParam = (sql:TYPE_VARCHAR, productName);
 
-    var dtReturned = patchMetricDB -> select("SELECT ID FROM PRODUCT_COMPONENT WHERE COMPONENT_NAME = ?", model:ProductComponent, productNameParam);
-
-    //    table patchtable = check dtReturned;
+    var dtReturned = patchMetricDB -> select(PATCH_METRICS_GET_PRODUCT_COMPONENT_ID, model:ProductComponent, productNameParam);
 
     match dtReturned {
-        table patchtable => {
-            if (patchtable.hasNext()) {
-                var rs = check <model:ProductComponent>patchtable.getNext();
-                io:print("product id " + productName + " ");
-                io:println(rs.ID);
-                patchtable.close();
+        table productTable => {
+            if (productTable.hasNext()) {
+                var rs = check <model:ProductComponent>productTable.getNext();
+                productTable.close();
                 return rs.ID;
             }
         }
         error err => {
-            io:println(err);
-            log:printErrorCause("Error occured while retrieving last patch info id", err);
+            log:printErrorCause("Error occured while retrieving last patch info id by prodyct name : " + productName, err);
         }
     }
-
 
     return 0;
 }
 
+documentation {Retrieve commit information using given commit SHA id.
+        P{{id}} Github commit id
+        returns If found commit information according to the given id, then return GithubCommitInfo object otherwise return null
+}
 public function getCommitInfo(string id) returns (model:GithubCommitInfo?) {
 
-    io:println(id);
+    log:printDebug("Retrieving commit information by id : " + id);
+
     sql:Parameter idParam = (sql:TYPE_VARCHAR, id);
 
-    var dtReturned = patchMetricDB -> select("SELECT * FROM GITHUB_COMMIT_INFO WHERE GITHUB_SHA_ID = ?", model:GithubCommitInfo, idParam);
-    table dt = check dtReturned;
+    var dtReturned = patchMetricDB -> select(PATCH_METRICS_GET_COMMIT_INFO, model:GithubCommitInfo, idParam);
 
-    if (dt.hasNext()) {
-        var rs = check <model:GithubCommitInfo>dt.getNext();
-        dt.close();
-        return rs;
+    match dtReturned {
+        table commitTable => {
+            if (commitTable.hasNext()) {
+                var rs = check <model:GithubCommitInfo>commitTable.getNext();
+                commitTable.close();
+                return rs;
+            }
+        }
+        error err => {
+            log:printErrorCause("Error occured while retrieving commit information by id : " + id, err);
+        }
     }
 
     return;
 }
 
-
+documentation {Get last file entry id
+        returns int which represent last file entry id.
+}
 public function getLastFileId() returns int {
 
-    var dtReturned = patchMetricDB -> select("SELECT ID FROM FILE_INFO ORDER BY ID DESC LIMIT 1", model:FileInfo);
+    log:printDebug("Retrieving entered last file id");
 
-    table dt = check dtReturned;
+    var dtReturned = patchMetricDB -> select(PATCH_METRICS_GET_LAST_FILE_ID, model:FileInfo);
 
-    if (dt.hasNext()) {
-        var rs = check <model:FileInfo>dt.getNext();
-        dt.close();
-        return rs.ID;
+    match dtReturned {
+        table fileTable => {
+            if (fileTable.hasNext()) {
+                var rs = check <model:FileInfo>fileTable.getNext();
+                fileTable.close();
+                return rs.ID;
+            }
+        }
+        error err => {
+            log:printErrorCause("Error occured while retrieving entered last file id", err);
+        }
     }
 
     return 0;
 }
 
+documentation {GET java classes information using file id and file last updated date before given date. Retrieve record limit is 100.
+        P{{id}} File id
+        P{{updatedDate}} Date which is used check last updated date
+        returns Array of FileInfo object.
+}
+public function getJavaFileInfo(int id, string updatedDate) returns model:FileInfo[] {
 
-public function getJAVAFileInfo(int id, string updatedDate) returns model:FileInfo[] {
+    log:printDebug("Retrieving java class information by id : " + id);
 
     sql:Parameter idParam = (sql:TYPE_INTEGER, id);
     sql:Parameter updatedDateParam = (sql:TYPE_DATE, updatedDate);
-    string dbQuery = "SELECT fi.* FROM FILE_INFO fi LEFT JOIN FILE_STATS fs ON fi.ID = fs.FILE_INFO_ID WHERE fi.ID > ? AND FILE_NAME LIKE '%.java' AND (fs.UPDATED_DATE IS NULL OR fs.UPDATED_DATE < ?) ORDER BY fi.ID LIMIT 100";
 
-    var dtReturned = patchMetricDB -> select(dbQuery, model:FileInfo, idParam, updatedDateParam);
-
-    table dt = check dtReturned;
+    var dtReturned = patchMetricDB -> select(PATCH_METRICS_GET_JAVA_FILE_INFO, model:FileInfo, idParam, updatedDateParam);
 
     model:FileInfo[] fileInfoList;
-    while (dt.hasNext()) {
-        var rs = check <model:FileInfo>dt.getNext();
-        fileInfoList[lengthof fileInfoList] = rs;
+    match dtReturned {
+        table fileTable => {
+            while (fileTable.hasNext()) {
+                var rs = check <model:FileInfo>fileTable.getNext();
+                fileInfoList[lengthof fileInfoList] = rs;
+            }
+        }
+        error err => {
+            log:printErrorCause("Error occured while retrieving java class information by id : " + id, err);
+        }
     }
 
     return fileInfoList;
 }
 
+documentation {GET file inofrmation by file id
+        P{{id}} File id
+        returns FileInfo object.
+}
+public function getFileInfoById(int id) returns model:FileInfo|error {
 
-public function getFileInfoById(int id) returns model:FileInfo {
+    log:printDebug("Retrieving java class information by id : " + id);
 
     sql:Parameter idParam = (sql:TYPE_VARCHAR, id);
-    var dtReturned = patchMetricDB -> select("SELECT * FROM FILE_INFO WHERE ID = ?", model:FileInfo, idParam);
-
-    table dt = check dtReturned;
+    var dtReturned = patchMetricDB -> select(PATCH_METRICS_GET_FILE_INFO, model:FileInfo, idParam);
 
     model:FileInfo fileInfo;
-    if (dt.hasNext()) {
-        var rs = check <model:FileInfo>dt.getNext();
-        io:println("Last File ID : " + rs.ID);
-        dt.close();
-        fileInfo = rs;
+    match dtReturned {
+        table fileTable => {
+            if (fileTable.hasNext()) {
+                var rs = check <model:FileInfo>fileTable.getNext();
+                fileTable.close();
+                fileInfo = rs;
+            }
+        }
+        error err => {
+            log:printErrorCause("Error occured while retrieving entered last file id", err);
+            return err;
+        }
     }
 
     return fileInfo;
 }
 
-
-public function getHighestNoOfPatchesModifiedFile(int morethan) returns model:FileModification[] {
-
-    string? dislikePharse;
-    foreach file in exculdeFiles {
-        match dislikePharse {
-            string pharse => {
-                dislikePharse = pharse + " OR '%" + file + "'";
-            }
-            () => {
-                dislikePharse = "subquery.FILE_NAME NOT LIKE '%" + file + "'";
-            }
-        }
-    }
-
-    if (morethan > 0) {
-        match dislikePharse {
-            string pharse => {
-                if (pharse.contains(" OR ")){
-                    pharse = "(" + pharse + ")";
-                }
-                dislikePharse = pharse + " AND subquery.NO_OF_PATCHES >= " + morethan;
-            }
-            () => {
-                dislikePharse = "subquery.NO_OF_PATCHES >= " + morethan;
-            }
-        }
-    }
-
-    string dbQuery;
-    match dislikePharse {
-        string pharse => {
-            dbQuery = "SELECT subquery.*, SUM(pf.TOTAL_CHANGES) AS CHURNS FROM " +
-                "(SELECT fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME, COUNT(pi.ID) AS NO_OF_PATCHES FROM FILE_INFO fi " +
-                "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
-                "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-                "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-                "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
-                "GROUP BY fi.ID ORDER BY No_of_Patches DESC) subquery " +
-                "JOIN FILE_INFO f ON subquery.ID=f.ID " +
-                "JOIN FILE_CHANGES pf ON f.ID = pf.FILE_INFO_ID WHERE " + pharse + " GROUP BY f.ID ORDER BY subquery.NO_OF_PATCHES DESC";
-        }
-        () => {
-            dbQuery = "SELECT subquery.*, SUM(pf.TOTAL_CHANGES) AS CHURNS FROM " +
-                "(SELECT fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME, COUNT(pi.ID) AS NO_OF_PATCHES FROM FILE_INFO fi " +
-                "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
-                "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-                "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-                "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
-                "GROUP BY fi.ID ORDER BY No_of_Patches DESC) subquery " +
-                "JOIN FILE_INFO f ON subquery.ID=f.ID " +
-                "JOIN FILE_CHANGES pf ON f.ID = pf.FILE_INFO_ID GROUP BY f.ID ORDER BY subquery.NO_OF_PATCHES DESC";
-
-        }
-    }
-    io:println(dbQuery);
-    var dtReturned = patchMetricDB -> select(dbQuery, model:FileModification);
-
-    table dt = check dtReturned;
-    model:FileModification[] fileModificationList = [];
-
-    while (dt.hasNext()) {
-        var rs = check <model:FileModification>dt.getNext();
-        //json ss = check <json> dt.getNext();
-        //io:println(ss);
-        fileModificationList[lengthof fileModificationList] = rs;
-        //io:println(rs);
-        //  dt.close();
-        //return rs.ID;
-    }
-
-    // return 0;
-    return fileModificationList;
+documentation {Retrieve all repositries with pagination according to the given time period
+        P{{sortColumn}} Records sorting property name
+        P{{sortDir}} Records sort direction
+        P{{pageIndex}} Retrieving page index
+        P{{pageSize}} Page size. No of records per page
+        P{{startDate}} Time period start date
+        P{{endDate}} Time period end date
+        returns Array of Repository object. If occur error then return Error.
 }
+public function getRepositories(string sortColumn, int sortDir, int pageIndex, int pageSize, string startDate,
+string endDate) returns model:Repository[]|error {
 
-
-
-
-public function getHighestLOCChangesFile(int morethan) returns model:FileModification[] {
-
-    string? dislikePharse;
-    foreach file in exculdeFiles {
-        match dislikePharse {
-            string pharse => {
-                dislikePharse = pharse + " OR '%" + file + "'";
-            }
-            () => {
-                dislikePharse = "subquery.FILE_NAME NOT LIKE '%" + file + "'";
-            }
-        }
-    }
-
-    string havingPharse = "";
-    if (morethan > 0) {
-        havingPharse = " HAVING CHURNS >= " + morethan;
-    }
-
-    string dbQuery;
-    match dislikePharse {
-        string pharse => {
-            dbQuery = "SELECT subquery.*, SUM(pf.TOTAL_CHANGES) AS CHURNS FROM " +
-                "(SELECT fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME, COUNT(pi.ID) AS NO_OF_PATCHES FROM FILE_INFO fi " +
-                "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
-                "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-                "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-                "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
-                "GROUP BY fi.ID ORDER BY No_of_Patches DESC) subquery " +
-                "JOIN FILE_INFO f ON subquery.ID=f.ID " +
-                "JOIN FILE_CHANGES pf ON f.ID = pf.FILE_INFO_ID WHERE " + pharse + " GROUP BY f.ID" + havingPharse + " ORDER BY CHURNS DESC";
-        }
-        () => {
-            dbQuery = "SELECT subquery.*, SUM(pf.TOTAL_CHANGES) AS CHURNS FROM " +
-                "(SELECT fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME, COUNT(pi.ID) AS NO_OF_PATCHES FROM FILE_INFO fi " +
-                "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
-                "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-                "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-                "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
-                "GROUP BY fi.ID ORDER BY No_of_Patches DESC) subquery " +
-                "JOIN FILE_INFO f ON subquery.ID=f.ID " +
-                "JOIN FILE_CHANGES pf ON f.ID = pf.FILE_INFO_ID GROUP BY f.ID" + havingPharse + " ORDER BY CHURNS DESC";
-
-        }
-    }
-    io:println(dbQuery);
-    var dtReturned = patchMetricDB -> select(dbQuery, model:FileModification);
-
-    table dt = check dtReturned;
-    model:FileModification[] fileModificationList = [];
-
-    while (dt.hasNext()) {
-        var rs = check <model:FileModification>dt.getNext();
-        fileModificationList[lengthof fileModificationList] = rs;
-        //io:println(rs);
-    }
-
-    return fileModificationList;
-}
-
-
-public function getRepositories(string sortColumn, int sortDir, int pageIndex, int pageSize, string startDate, string endDate) returns model:Repository[] {
-
-    log:printDebug("Retrieving repositories with paging no : " + pageIndex);
+    log:printDebug("Retrieving repositories with page no : " + pageIndex);
 
     sql:Parameter periodStartDateParam = (sql:TYPE_DATE, startDate);
     sql:Parameter periodEndDateParam = (sql:TYPE_DATE, endDate);
 
-    string dbQuery = "SELECT fi.REPOSITORY_NAME,COUNT(pi.ID) as No_of_Patches, SUM(fc.TOTAL_CHANGES) AS CHURNS FROM FILE_INFO fi " +
-        "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
-        "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-        "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-        "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
-        "WHERE pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? " +
-        "GROUP BY fi.REPOSITORY_NAME ORDER BY " + sortColumn + " " + (sortDir == 1 ? "DESC" : "ASC") + " LIMIT " + pageSize + " OFFSET " + ((pageIndex - 1) * pageSize);
+    string dbQuery = PATCH_METRICS_GET_REPOSITORIES + generatePaginationQuery(sortColumn, sortDir, pageIndex, pageSize);
 
-    io:println(dbQuery);
-    var dtReturned = patchMetricDB -> select(dbQuery, model:Repository, periodStartDateParam, periodEndDateParam);
+    var dtReturned = patchMetricDB -> select(dbQuery, model:Repository, periodStartDateParam, periodEndDateParam,
+        periodStartDateParam, periodEndDateParam);
 
     model:Repository[] repositoryList = [];
     match dtReturned {
@@ -594,41 +581,40 @@ public function getRepositories(string sortColumn, int sortDir, int pageIndex, i
             while (dt.hasNext()) {
                 var rs = check <model:Repository>dt.getNext();
                 repositoryList[lengthof repositoryList] = rs;
-                //io:println(rs);
             }
         }
         error err => {
-
+            log:printErrorCause("Error occured while retrieving repository list ", err);
+            return err;
         }
     }
-
-
-    //table dt = check dtReturned;
 
     return repositoryList;
 }
 
+documentation {Retrieve repositries with pagination according to the given product and time period
+        P{{productName}} Product Name
+        P{{sortColumn}} Records sorting property name
+        P{{sortDir}} Records sort direction
+        P{{pageIndex}} Retrieving page index
+        P{{pageSize}} Page size. No of records per page
+        P{{startDate}} Time period start date
+        P{{endDate}} Time period end date
+        returns Array of Repository object. If occur error then return Error.
+}
+public function getRepositoriesbyProduct(string productName, string sortColumn, int sortDir, int pageIndex,
+int pageSize, string startDate, string endDate) returns model:Repository[]|error {
 
-public function getRepositoriesbyProduct(string productName, string sortColumn, int sortDir, int pageIndex, int pageSize, string startDate, string endDate) returns model:Repository[] {
-
-    log:printDebug("Retrieving repositories by Product with product name : " + productName + "  paging no : " + pageIndex);
+    log:printDebug("Retrieving repositories by product with product name : " + productName + "  page no : " + pageIndex);
 
     sql:Parameter productNameParam = (sql:TYPE_VARCHAR, productName);
     sql:Parameter periodStartDateParam = (sql:TYPE_DATE, startDate);
     sql:Parameter periodEndDateParam = (sql:TYPE_DATE, endDate);
 
-    string dbQuery = "SELECT fi.REPOSITORY_NAME,COUNT(pi.ID) as No_of_Patches, SUM(fc.TOTAL_CHANGES) AS CHURNS FROM FILE_INFO fi " +
-        "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
-        "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-        "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-        "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
-        "JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
-        "JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID " +
-        "WHERE p.PRODUCT_NAME = ? AND pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? " +
-        "GROUP BY fi.REPOSITORY_NAME ORDER BY " + sortColumn + " " + (sortDir == 1 ? "DESC" : "ASC") + " LIMIT " + pageSize + " OFFSET " + ((pageIndex - 1) * pageSize);
+    string dbQuery = PATCH_METRICS_GET_REPOSITORIES_BY_PRODUCT + generatePaginationQuery(sortColumn, sortDir, pageIndex, pageSize);
 
-    io:println(dbQuery);
-    var dtReturned = patchMetricDB -> select(dbQuery, model:Repository, productNameParam, periodStartDateParam, periodEndDateParam);
+    var dtReturned = patchMetricDB -> select(dbQuery, model:Repository, productNameParam, periodStartDateParam,
+        periodEndDateParam, productNameParam, periodStartDateParam, periodEndDateParam);
 
     model:Repository[] repositoryList = [];
     match dtReturned {
@@ -639,43 +625,35 @@ public function getRepositoriesbyProduct(string productName, string sortColumn, 
             }
         }
         error err => {
-
+            log:printErrorCause("Error occured while retrieving repository list by product", err);
+            return err;
         }
     }
-
-
-    //table dt = check dtReturned;
 
     return repositoryList;
 }
 
+documentation {Retrieve all products with pagination according to the given time period
+        P{{sortColumn}} Records sorting property name
+        P{{sortDir}} Records sort direction
+        P{{pageIndex}} Retrieving page index
+        P{{pageSize}} Page size. No of records per page
+        P{{startDate}} Time period start date
+        P{{endDate}} Time period end date
+        returns Array of Product object. If occur error then return Error.
+}
+public function getProducts(string sortColumn, int sortDir, int pageIndex, int pageSize, string startDate,
+string endDate) returns model:Product[]|error {
 
-public function getProducts(string sortColumn, int sortDir, int pageIndex, int pageSize, string startDate, string endDate) returns model:Product[] {
-
-    log:printDebug("Retrieving repositories with paging no : " + pageIndex);
+    log:printDebug("Retrieving products with page no : " + pageIndex);
 
     sql:Parameter periodStartDateParam = (sql:TYPE_DATE, startDate);
     sql:Parameter periodEndDateParam = (sql:TYPE_DATE, endDate);
 
-    string dbQuery = "SELECT getChurnQuery.PRODUCT_NAME, getChurnQuery.CHURNS, getPatchesCountQuery.No_of_Patches FROM " +
-        "(SELECT p.PRODUCT_NAME, SUM(fc.TOTAL_CHANGES) AS CHURNS FROM FILE_INFO fi " +
-        "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
-        "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-        "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-        "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
-        "JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
-        "JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID " +
-        "WHERE pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? " +
-        "GROUP BY p.PRODUCT_NAME) getChurnQuery " +
-        "JOIN (SELECT p.PRODUCT_NAME, COUNT(pi.ID) as No_of_Patches FROM PATCH_INFO pi " +
-        "JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
-        "JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID " +
-        "WHERE pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? " +
-        "GROUP BY p.PRODUCT_NAME) getPatchesCountQuery ON getChurnQuery.PRODUCT_NAME = getPatchesCountQuery.PRODUCT_NAME " +
-        "ORDER BY " + sortColumn + " " + (sortDir == 1 ? "DESC" : "ASC") + " LIMIT " + pageSize + " OFFSET " + ((pageIndex - 1) * pageSize);
+    string dbQuery = PATCH_METRICS_GET_PRODUCTS + generatePaginationQuery(sortColumn, sortDir, pageIndex, pageSize);
 
-    io:println(dbQuery);
-    var dtReturned = patchMetricDB -> select(dbQuery, model:Product, periodStartDateParam, periodEndDateParam, periodStartDateParam, periodEndDateParam);
+    var dtReturned = patchMetricDB -> select(dbQuery, model:Product, periodStartDateParam, periodEndDateParam,
+        periodStartDateParam, periodEndDateParam);
 
     model:Product[] productList = [];
     match dtReturned {
@@ -686,33 +664,33 @@ public function getProducts(string sortColumn, int sortDir, int pageIndex, int p
             }
         }
         error err => {
-            log:printError("Retrieving repositories with paging no : " + pageIndex);
+            log:printErrorCause("Error ocuured while retrieving products", err);
+            return err;
         }
     }
 
     return productList;
 }
 
+documentation {Retrieve all complete patches with pagination according to the given time period
+        P{{sortColumn}} Records sorting property name
+        P{{sortDir}} Records sort direction
+        P{{pageIndex}} Retrieving page index
+        P{{pageSize}} Page size. No of records per page
+        P{{startDate}} Time period start date
+        P{{endDate}} Time period end date
+        returns Array of Patch object. If occur error then return Error.
+}
+public function getPatches(string sortColumn, int sortDir, int pageIndex, int pageSize, string startDate,
+string endDate) returns model:Patch[]|error {
 
-public function getPatches(string sortColumn, int sortDir, int pageIndex, int pageSize, string startDate, string endDate) returns model:Patch[]|error {
-
-    log:printDebug("Retrieving patches with paging no : " + pageIndex);
+    log:printDebug("Retrieving patches with page no : " + pageIndex);
 
     sql:Parameter periodStartDateParam = (sql:TYPE_DATE, startDate);
     sql:Parameter periodEndDateParam = (sql:TYPE_DATE, endDate);
 
-    string dbQuery = "SELECT pi.ID, pi.PATCH_NAME, pi.SUPPORT_JIRA, pi.REPORT_DATE, pi.CLIENT, p.PRODUCT_NAME, COUNT(fi.ID) AS NO_OF_FILES_CHANGES, SUM(fc.TOTAL_CHANGES) AS CHURNS FROM PRODUCT p " +
-        "JOIN PRODUCT_COMPONENT pc ON p.ID = pc.PRODUCT_ID " +
-        "JOIN PATCH_INFO pi ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
-        "JOIN PATCH_RELATED_COMMITS prc ON pi.ID = prc.PATCH_INFO_ID " +
-        "JOIN GITHUB_COMMIT_INFO gci ON prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-        "JOIN FILE_CHANGES fc ON gci.GITHUB_SHA_ID = fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-        "JOIN FILE_INFO fi ON fc.FILE_INFO_ID = fi.ID " +
-        "WHERE pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? " +
-        "GROUP BY pi.ID, pi.PATCH_NAME, pi.SUPPORT_JIRA, pi.REPORT_DATE, pi.CLIENT, p.PRODUCT_NAME " +
-        "ORDER BY " + sortColumn + " " + (sortDir == 1 ? "DESC" : "ASC") + " LIMIT " + pageSize + " OFFSET " + ((pageIndex - 1) * pageSize);
+    string dbQuery = PATCH_METRICS_GET_PATCHES + generatePaginationQuery(sortColumn, sortDir, pageIndex, pageSize);
 
-    io:println(dbQuery);
     var dtReturned = patchMetricDB -> select(dbQuery, model:Patch, periodStartDateParam, periodEndDateParam);
 
     model:Patch[] patchList = [];
@@ -722,38 +700,36 @@ public function getPatches(string sortColumn, int sortDir, int pageIndex, int pa
                 var rs = check <model:Patch>dt.getNext();
                 patchList[lengthof patchList] = rs;
             }
-            io:println(patchList);
             return patchList;
         }
         error err => {
-            io:println(err);
-            log:printErrorCause("Error occured while retrieving  patches list ", err);
+            log:printErrorCause("Error occured while retrieving patches list", err);
             return err;
         }
     }
 }
 
+documentation {Retrieve completed patches with pagination according to the given product and time period
+        P{{productName}} Product Name
+        P{{sortColumn}} Records sorting property name
+        P{{sortDir}} Records sort direction
+        P{{pageIndex}} Retrieving page index
+        P{{pageSize}} Page size. No of records per page
+        P{{startDate}} Time period start date
+        P{{endDate}} Time period end date
+        returns Array of Patch object. If occur error then return Error.
+}
+public function getPatchesbyProduct(string productName, string sortColumn, int sortDir, int pageIndex, int pageSize,
+string startDate, string endDate) returns model:Patch[]|error {
 
-public function getPatchesbyProduct(string productName, string sortColumn, int sortDir, int pageIndex, int pageSize, string startDate, string endDate) returns model:Patch[]|error {
-
-    log:printDebug("Retrieving patches by product with product : " + productName + " paging no : " + pageIndex);
+    log:printDebug("Retrieving patches by product with product : " + productName + " page no : " + pageIndex);
 
     sql:Parameter productNameParam = (sql:TYPE_VARCHAR, productName);
     sql:Parameter periodStartDateParam = (sql:TYPE_DATE, startDate);
     sql:Parameter periodEndDateParam = (sql:TYPE_DATE, endDate);
 
-    string dbQuery = "SELECT pi.ID, pi.PATCH_NAME, pi.SUPPORT_JIRA, pi.REPORT_DATE, pi.CLIENT, p.PRODUCT_NAME, COUNT(fi.ID) AS NO_OF_FILES_CHANGES, SUM(fc.TOTAL_CHANGES) AS CHURNS FROM PRODUCT p " +
-        "JOIN PRODUCT_COMPONENT pc ON p.ID = pc.PRODUCT_ID " +
-        "JOIN PATCH_INFO pi ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
-        "JOIN PATCH_RELATED_COMMITS prc ON pi.ID = prc.PATCH_INFO_ID " +
-        "JOIN GITHUB_COMMIT_INFO gci ON prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-        "JOIN FILE_CHANGES fc ON gci.GITHUB_SHA_ID = fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-        "JOIN FILE_INFO fi ON fc.FILE_INFO_ID = fi.ID " +
-        "WHERE p.PRODUCT_NAME = ? AND pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? " +
-        "GROUP BY pi.ID, pi.PATCH_NAME, pi.SUPPORT_JIRA, pi.REPORT_DATE, pi.CLIENT, p.PRODUCT_NAME " +
-        "ORDER BY " + sortColumn + " " + (sortDir == 1 ? "DESC" : "ASC") + " LIMIT " + pageSize + " OFFSET " + ((pageIndex - 1) * pageSize);
+    string dbQuery = PATCH_METRICS_GET_PATCHES_BY_PRODUCT + generatePaginationQuery(sortColumn, sortDir, pageIndex, pageSize);
 
-    io:println(dbQuery);
     var dtReturned = patchMetricDB -> select(dbQuery, model:Patch, productNameParam, periodStartDateParam, periodEndDateParam);
 
     model:Patch[] patchList = [];
@@ -763,38 +739,37 @@ public function getPatchesbyProduct(string productName, string sortColumn, int s
                 var rs = check <model:Patch>dt.getNext();
                 patchList[lengthof patchList] = rs;
             }
-            io:println(patchList);
             return patchList;
         }
         error err => {
-            io:println(err);
-            log:printErrorCause("Error occured while retrieving  patches list by product ", err);
+            log:printErrorCause("Error occured while retrieving patches list by product", err);
             return err;
         }
     }
 }
 
-public function getPatchesbyRepository(string repositoryName, string sortColumn, int sortDir, int pageIndex, int pageSize, string startDate, string endDate) returns model:Patch[]|error {
+documentation {Retrieve completed patches with pagination according to the given repository and time period
+        P{{repositoryName}} Repositroy Name
+        P{{sortColumn}} Records sorting property name
+        P{{sortDir}} Records sort direction
+        P{{pageIndex}} Retrieving page index
+        P{{pageSize}} Page size. No of records per page
+        P{{startDate}} Time period start date
+        P{{endDate}} Time period end date
+        returns Array of Patch object. If occur error then return Error.
+}
+public function getPatchesbyRepository(string repositoryName, string sortColumn, int sortDir, int pageIndex,
+    int pageSize, string startDate, string endDate) returns model:Patch[]|error {
 
-    log:printDebug("Retrieving patches by repository with repository : " + repositoryName + " paging no : " + pageIndex);
+    log:printDebug("Retrieving patches by repository with repository : " + repositoryName + " page no : " + pageIndex);
 
     sql:Parameter repositoryNameParam = (sql:TYPE_VARCHAR, repositoryName);
     sql:Parameter periodStartDateParam = (sql:TYPE_DATE, startDate);
     sql:Parameter periodEndDateParam = (sql:TYPE_DATE, endDate);
 
-    string dbQuery = "SELECT pi.ID, pi.PATCH_NAME, pi.SUPPORT_JIRA, pi.REPORT_DATE, pi.CLIENT, p.PRODUCT_NAME, COUNT(fi.ID) AS NO_OF_FILES_CHANGES, SUM(fc.TOTAL_CHANGES) AS CHURNS FROM PRODUCT p " +
-        "JOIN PRODUCT_COMPONENT pc ON p.ID = pc.PRODUCT_ID " +
-        "JOIN PATCH_INFO pi ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
-        "JOIN PATCH_RELATED_COMMITS prc ON pi.ID = prc.PATCH_INFO_ID " +
-        "JOIN GITHUB_COMMIT_INFO gci ON prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-        "JOIN FILE_CHANGES fc ON gci.GITHUB_SHA_ID = fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-        "JOIN FILE_INFO fi ON fc.FILE_INFO_ID = fi.ID " +
-        "WHERE fi.REPOSITORY_NAME = ? AND pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? " +
-        "GROUP BY pi.ID, pi.PATCH_NAME, pi.SUPPORT_JIRA, pi.REPORT_DATE, pi.CLIENT, p.PRODUCT_NAME " +
-        "ORDER BY " + sortColumn + " " + (sortDir == 1 ? "DESC" : "ASC") + " LIMIT " + pageSize + " OFFSET " + ((pageIndex - 1) * pageSize);
+    string dbQuery = PATCH_METRICS_GET_PATCHES_BY_REPOSITORY + generatePaginationQuery(sortColumn, sortDir, pageIndex, pageSize);
 
-    io:println(dbQuery);
-    var dtReturned = patchMetricDB -> select(dbQuery, model:Patch, repositoryNameParam,periodStartDateParam, periodEndDateParam);
+    var dtReturned = patchMetricDB -> select(dbQuery, model:Patch, repositoryNameParam, periodStartDateParam, periodEndDateParam);
 
     model:Patch[] patchList = [];
     match dtReturned {
@@ -803,35 +778,26 @@ public function getPatchesbyRepository(string repositoryName, string sortColumn,
                 var rs = check <model:Patch>dt.getNext();
                 patchList[lengthof patchList] = rs;
             }
-            io:println(patchList);
             return patchList;
         }
         error err => {
-            io:println(err);
-            log:printErrorCause("Error occured while retrieving  patches list by repository ", err);
+            log:printErrorCause("Error occured while retrieving patches list by repository", err);
             return err;
         }
     }
 }
 
+documentation {Retrieve completed patche according to the given patch id
+        P{{id}} Patch id
+        returns Patch object. If occur error then return Error.
+}
 public function getPatchesbyId(int id) returns model:Patch|error {
 
-    log:printDebug("Retrieving patches by id with id : " + id);
+    log:printDebug("Retrieving patch by id with id : " + id);
 
     sql:Parameter repositoryNameParam = (sql:TYPE_VARCHAR, id);
 
-    string dbQuery = "SELECT pi.ID, pi.PATCH_NAME, pi.SUPPORT_JIRA, DATE_FORMAT(pi.REPORT_DATE, '%d-%m-%Y') AS REPORT_DATE, pi.CLIENT, p.PRODUCT_NAME, COUNT(fi.ID) AS NO_OF_FILES_CHANGES, SUM(fc.TOTAL_CHANGES) AS CHURNS FROM PRODUCT p " +
-        "JOIN PRODUCT_COMPONENT pc ON p.ID = pc.PRODUCT_ID " +
-        "JOIN PATCH_INFO pi ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
-        "JOIN PATCH_RELATED_COMMITS prc ON pi.ID = prc.PATCH_INFO_ID " +
-        "JOIN GITHUB_COMMIT_INFO gci ON prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-        "JOIN FILE_CHANGES fc ON gci.GITHUB_SHA_ID = fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-        "JOIN FILE_INFO fi ON fc.FILE_INFO_ID = fi.ID " +
-        "WHERE pi.ID = ? " +
-        "GROUP BY pi.ID, pi.PATCH_NAME, pi.SUPPORT_JIRA, pi.REPORT_DATE, pi.CLIENT, p.PRODUCT_NAME";
-
-    io:println(dbQuery);
-    var dtReturned = patchMetricDB -> select(dbQuery, model:Patch, repositoryNameParam);
+    var dtReturned = patchMetricDB -> select(PATCH_METRICS_GET_PATCH, model:Patch, repositoryNameParam);
 
     model:Patch patch;
 
@@ -839,51 +805,41 @@ public function getPatchesbyId(int id) returns model:Patch|error {
         table dt => {
             while (dt.hasNext()) {
                 var rs = check <model:Patch>dt.getNext();
-                io:println(rs);
                 patch = rs;
             }
         }
         error err => {
-            io:println(err);
-            log:printErrorCause("Error occured while retrieving  patches list by repository ", err);
+            log:printErrorCause("Error occured while retrieving patch list by id", err);
             return err;
         }
     }
     return patch;
 }
 
+documentation {Retrieve file statistics with pagination according to the given repository and time period
+        P{{repositoryName}} Repositroy Name
+        P{{sortColumn}} Records sorting property name
+        P{{sortDir}} Records sort direction
+        P{{pageIndex}} Retrieving page index
+        P{{pageSize}} Page size. No of records per page
+        P{{startDate}} Time period start date
+        P{{endDate}} Time period end date
+        returns Array of FileInfoWithStats object. If occur error then return Error.
+}
+public function getFileInfoWithStatsbyRepository(string repositoryName, string sortColumn, int sortDir, int pageIndex,
+    int pageSize, string startDate, string endDate) returns model:FileInfoWithStats[]|error {
 
-public function getFileInfoWithStatsbyRepository(string repositoryName, string sortColumn, int sortDir, int pageIndex, int pageSize, string startDate, string endDate) returns model:FileInfoWithStats[]|error {
-
-    log:printDebug("Retrieving files information with statistics by reposiotry with repository : " + repositoryName + " paging no : " + pageIndex);
-
-    io:println(startDate);
-    io:println(endDate);
+    log:printDebug("Retrieving files information with statistics by reposiotry with repository : " + repositoryName + " page no : " + pageIndex);
 
     sql:Parameter repositoryNameParam = (sql:TYPE_VARCHAR, repositoryName);
     sql:Parameter periodStartDateParam = (sql:TYPE_DATE, startDate);
     sql:Parameter periodEndDateParam = (sql:TYPE_DATE, endDate);
 
-    string dbQuery = "SELECT fileStats.*, COUNT(i.ID) AS NO_OF_ISSUES FROM (SELECT p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, IF(fi.FILE_NAME LIKE '%.java', " +
-        "IF(fs.UPDATED_DATE IS NULL, 'Not Updated', DATE_FORMAT(fs.UPDATED_DATE, '%d-%m-%Y')), 'N/A') AS UPDATED_DATE, fi.REPOSITORY_NAME, COUNT(pi.ID) AS NO_OF_PATCHES, SUM(fc.TOTAL_CHANGES) AS CHURNS, " +
-        "IF(fs.TEST_COVERED_LINES IS NULL OR fs.TEST_MISSED_LINES IS NULL, -1, " +
-        "CONCAT(IF(fs.TEST_COVERED_LINES = 0 AND fs.TEST_MISSED_LINES = 0, 0, " +
-        "ROUND(((fs.TEST_COVERED_LINES/(fs.TEST_COVERED_LINES +  fs.TEST_MISSED_LINES))* 100 ),2)),'%')) AS TEST_COVERAGE FROM PRODUCT p " +
-        "JOIN PRODUCT_COMPONENT pc ON p.ID = pc.PRODUCT_ID " +
-        "JOIN PATCH_INFO pi ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
-        "JOIN PATCH_RELATED_COMMITS prc ON pi.ID = prc.PATCH_INFO_ID " +
-        "JOIN GITHUB_COMMIT_INFO gci ON prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-        "JOIN FILE_CHANGES fc ON gci.GITHUB_SHA_ID = fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-        "JOIN FILE_INFO fi ON fc.FILE_INFO_ID = fi.ID " +
-        "LEFT JOIN FILE_STATS fs ON fi.ID = fs.FILE_INFO_ID " +
-        "WHERE fi.REPOSITORY_NAME = ? AND pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? " +
-        "GROUP BY p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME) fileStats " +
-        "JOIN ISSUE i ON i.FILE_STATS_FILE_INFO_ID = fileStats.ID " +
-        "GROUP BY fileStats.PRODUCT_NAME, fileStats.ID, fileStats.FILE_NAME, fileStats.REPOSITORY_NAME " +
-        "ORDER BY " + sortColumn + " " + (sortDir == 1 ? "DESC" : "ASC") + " LIMIT " + pageSize + " OFFSET " + ((pageIndex - 1) * pageSize);
+    string dbQuery = PATCH_METRICS_GET_FILE_STATS_BY_REPOSITORY_INCLUDE_INTERNAL_PATCHES +
+        generatePaginationQuery(sortColumn, sortDir, pageIndex, pageSize);
 
-    io:println(dbQuery);
-    var dtReturned = patchMetricDB -> select(dbQuery, model:FileInfoWithStats, repositoryNameParam, periodStartDateParam, periodEndDateParam);
+    var dtReturned = patchMetricDB -> select(dbQuery, model:FileInfoWithStats, repositoryNameParam, periodStartDateParam,
+        periodEndDateParam);
 
     model:FileInfoWithStats[] fileList = [];
     match dtReturned {
@@ -892,45 +848,40 @@ public function getFileInfoWithStatsbyRepository(string repositoryName, string s
                 var rs = check <model:FileInfoWithStats>dt.getNext();
                 fileList[lengthof fileList] = rs;
             }
-            io:println(fileList);
             return fileList;
         }
         error err => {
-            io:println(err);
-            log:printErrorCause("Error occured while retrieving files information with stattics by reposiotry ", err);
+            log:printErrorCause("Error occured while retrieving files information with stattics by reposiotry", err);
             return err;
         }
     }
 }
 
-public function getFileInfoWithStatsbyPatch(int id, string sortColumn, int sortDir, int pageIndex, int pageSize, string startDate, string endDate) returns model:FileInfoWithStats[]|error {
+documentation {Retrieve file statistics with pagination according to the given patch and time period
+        P{{id}} Patch id
+        P{{sortColumn}} Records sorting property name
+        P{{sortDir}} Records sort direction
+        P{{pageIndex}} Retrieving page index
+        P{{pageSize}} Page size. No of records per page
+        P{{startDate}} Time period start date
+        P{{endDate}} Time period end date
+        returns Array of FileInfoWithStats object. If occur error then return Error.
+}
+public function getFileInfoWithStatsbyPatch(int id, string sortColumn, int sortDir, int pageIndex, int pageSize,
+    string startDate, string endDate) returns model:FileInfoWithStats[]|error {
 
-    log:printDebug("Retrieving files information with statistics by patch with patch id : " + id + " paging no : " + pageIndex);
+    log:printDebug("Retrieving files information with statistics by patch with patch id : " + id + " page no : " + pageIndex);
 
     sql:Parameter idParam = (sql:TYPE_INTEGER, id);
     sql:Parameter periodStartDateParam = (sql:TYPE_DATE, startDate);
     sql:Parameter periodEndDateParam = (sql:TYPE_DATE, endDate);
 
-    string dbQuery = "SELECT fileStats.*, COUNT(i.ID) AS NO_OF_ISSUES FROM (SELECT p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, IF(fi.FILE_NAME LIKE '%.java', " +
-        "IF(fs.UPDATED_DATE IS NULL, 'Not Updated', DATE_FORMAT(fs.UPDATED_DATE, '%d-%m-%Y')), 'N/A') AS UPDATED_DATE, fi.REPOSITORY_NAME, COUNT(pi.ID) AS NO_OF_PATCHES, SUM(fc.TOTAL_CHANGES) AS CHURNS, "+
-        "IF(fs.TEST_COVERED_LINES IS NULL OR fs.TEST_MISSED_LINES IS NULL, -1, " +
-        "CONCAT(IF(fs.TEST_COVERED_LINES = 0 AND fs.TEST_MISSED_LINES = 0, 0, " +
-        "ROUND(((fs.TEST_COVERED_LINES/(fs.TEST_COVERED_LINES +  fs.TEST_MISSED_LINES))* 100 ),2)),'%')) AS TEST_COVERAGE FROM PRODUCT p " +
-        "JOIN PRODUCT_COMPONENT pc ON p.ID = pc.PRODUCT_ID " +
-        "JOIN PATCH_INFO pi ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
-        "JOIN PATCH_RELATED_COMMITS prc ON pi.ID = prc.PATCH_INFO_ID " +
-        "JOIN GITHUB_COMMIT_INFO gci ON prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-        "JOIN FILE_CHANGES fc ON gci.GITHUB_SHA_ID = fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-        "JOIN FILE_INFO fi ON fc.FILE_INFO_ID = fi.ID " +
-        "LEFT JOIN FILE_STATS fs ON fi.ID = fs.FILE_INFO_ID " +
-        "WHERE pi.ID = ? AND pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? " +
-        "GROUP BY p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME) fileStats " +
-        "JOIN ISSUE i ON i.FILE_STATS_FILE_INFO_ID = fileStats.ID " +
-        "GROUP BY fileStats.PRODUCT_NAME, fileStats.ID, fileStats.FILE_NAME, fileStats.REPOSITORY_NAME " +
-        "ORDER BY " + sortColumn + " " + (sortDir == 1 ? "DESC" : "ASC") + " LIMIT " + pageSize + " OFFSET " + ((pageIndex - 1) * pageSize);
+    string dbQuery = PATCH_METRICS_GET_FILE_STATS_BY_PATCH + generatePaginationQuery(sortColumn, sortDir, pageIndex, pageSize);
 
-    io:println(dbQuery);
-    var dtReturned = patchMetricDB -> select(dbQuery, model:FileInfoWithStats, idParam, periodStartDateParam, periodEndDateParam);
+    log:printInfo(dbQuery);
+
+    var dtReturned = patchMetricDB -> select(dbQuery, model:FileInfoWithStats, idParam, periodStartDateParam,
+        periodEndDateParam);
 
     model:FileInfoWithStats[] fileList = [];
     match dtReturned {
@@ -939,195 +890,37 @@ public function getFileInfoWithStatsbyPatch(int id, string sortColumn, int sortD
                 var rs = check <model:FileInfoWithStats>dt.getNext();
                 fileList[lengthof fileList] = rs;
             }
-            io:println(fileList);
             return fileList;
         }
         error err => {
-            io:println(err);
-            log:printErrorCause("Error occured while retrieving files information with stattics by reposiotry ", err);
+            log:printErrorCause("Error occured while retrieving files information with statistics by patch", err);
             return err;
         }
     }
 }
 
-
-
-
-public function getTopUpdatedFileTypesByProducts(string sortColumn, int sortDir, int pageIndex, int pageSize) returns model:Product[] {
-
-    log:printDebug("Retrieving repositories with paging no : ");
-
-    string dbQuery = "SELECT PRODUCT_NAME, COUNT(ID) FROM PATCH_INFO GROUP BY PRODUCT_NAME";
-
-    io:println(dbQuery);
-    var dtReturned = patchMetricDB -> select(dbQuery, model:Product);
-
-    model:Product[] productList = [];
-    match dtReturned {
-        table dt => {
-            while (dt.hasNext()) {
-                var rs = check <model:Product>dt.getNext();
-                productList[lengthof productList] = rs;
-                //io:println(rs);
-            }
-        }
-        error err => {
-
-        }
-    }
-
-    return productList;
+documentation {Retrieve most updated java classes information with statistics according to the time period
+        P{{startDate}} Time period start date
+        P{{endDate}} Time period end date
+        P{{sortColumn}} Records sorting property name
+        P{{sortDir}} Records sort direction
+        P{{pageIndex}} Retrieving page index
+        P{{pageSize}} Page size. No of records per page
+        returns Array of FileInfoWithStats object. If occur error then return Error.
 }
+public function getMostModifiedJavaClasses(string startDate, string endDate, string sortColumn, int sortDir,
+    int pageIndex, int pageSize) returns model:FileInfoWithStats[]|error {
 
-public function getDefaultPatchChanges(int minOrMaxChurns, boolean minChurns) returns model:PatchChanges[] {
-    return getPatchChanges([], [], minOrMaxChurns, minChurns);
-}
-
-public function getPatchJavaCodeChangesExceptTestCases(int maxChurns) returns model:PatchChanges[] {
-    return getPatchChanges([".java"], ["/test/"], maxChurns, false);
-}
-
-public function getPatchUIChanges(int maxChurns) returns model:PatchChanges[] {
-    return getPatchChanges([".js", ".html", ".htm", ".css", ".jsp", ".jag", ".svg", ".png"], [], maxChurns, false);
-}
-
-//
-function getPatchChanges(string[] likeValues, string[] dislikeValues, int minOrMaxChurns, boolean minChurns) returns model:PatchChanges[] {
-
-    string? likePharse;
-    foreach value in likeValues {
-        match likePharse {
-            string pharse => {
-                likePharse = pharse + " OR '%" + value + "%'";
-            }
-            () => {
-                likePharse = "fi.FILE_NAME LIKE '%" + value + "%'";
-            }
-        }
-    }
-
-    string? disLikePharse;
-    foreach value in dislikeValues {
-        match disLikePharse {
-            string pharse => {
-                disLikePharse = pharse + " OR '%" + value + "%'";
-            }
-            () => {
-                disLikePharse = "fi.FILE_NAME NOT LIKE '%" + value + "%'";
-            }
-        }
-    }
-
-    string? wherePharse;
-    match likePharse {
-        string like => {
-            match disLikePharse {
-                string dislike => {
-                    if (like.contains(" OR ")){
-                        like = "(" + like + ")";
-                    }
-                    if (dislike.contains(" OR ")){
-                        dislike = "(" + dislike + ")";
-                    }
-                    wherePharse = like + " AND " + dislike;
-                }
-                () => {
-                    wherePharse = like;
-                }
-            }
-        }
-        () => {
-            match disLikePharse {
-                string dislike => {
-                    wherePharse = dislike;
-                }
-                () => {
-                }
-            }
-        }
-    }
-
-
-    string havingPharse = "";
-    if (minOrMaxChurns > 0) {
-        havingPharse = " HAVING CHURNS " + (minChurns ? "<= " : ">= ") + minOrMaxChurns;
-    }
-
-    string dbQuery;
-    match wherePharse {
-        string pharse => {
-            dbQuery = "SELECT pi.ID, pi.PATCH_NAME, pi.CLIENT, SUM(fc.TOTAL_CHANGES) AS CHURNS FROM FILE_INFO fi " +
-                "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
-                "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-                "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-                "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
-                "WHERE " + pharse +
-                " GROUP BY pi.ID" + havingPharse + " ORDER BY CHURNS DESC";
-        }
-        () => {
-            dbQuery = "SELECT pi.ID, pi.PATCH_NAME, pi.CLIENT, SUM(fc.TOTAL_CHANGES) AS CHURNS FROM FILE_INFO fi " +
-                "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
-                "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-                "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-                "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
-                "GROUP BY pi.ID" + havingPharse + " ORDER BY CHURNS DESC";
-
-        }
-    }
-    io:println(dbQuery);
-    var dtReturned = patchMetricDB -> select(dbQuery, model:PatchChanges);
-
-    table dt = check dtReturned;
-    model:PatchChanges[] patchChangesList = [];
-
-    while (dt.hasNext()) {
-        var rs = check <model:PatchChanges>dt.getNext();
-        //json ss = check <json> dt.getNext();
-        //io:println(ss);
-        patchChangesList[lengthof patchChangesList] = rs;
-        //io:println(rs);
-        //  dt.close();
-        //return rs.ID;
-    }
-
-    // return 0;
-    return patchChangesList;
-
-}
-
-public function getMostModifiedJavaClasses(string startDate, string endDate, string sortColumn, int sortDir, int pageIndex, int pageSize) returns model:FileInfoWithStats[] {
-
-    log:printDebug("Retrieving most modified java classes with paging no : " + pageIndex);
+    log:printDebug("Retrieving most modified java classes with statistics with page no : " + pageIndex);
 
     sql:Parameter periodStartDateParam = (sql:TYPE_DATE, startDate);
     sql:Parameter periodEndDateParam = (sql:TYPE_DATE, endDate);
 
-    string dbQuery = "SELECT fileStats.*, COUNT(i.ID) AS NO_OF_ISSUES FROM ISSUE i RIGHT JOIN (SELECT * FROM (SELECT p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, DATE_FORMAT(fs.UPDATED_DATE, '%d-%m-%Y') AS UPDATED_DATE, fi.REPOSITORY_NAME, COUNT(pi.ID) AS NO_OF_PATCHES, SUM(fc.TOTAL_CHANGES) AS CHURNS, CONCAT(IF(fs.TEST_COVERED_LINES = 0 AND fs.TEST_MISSED_LINES = 0, 0, ROUND(((fs.TEST_COVERED_LINES/(fs.TEST_COVERED_LINES +  fs.TEST_MISSED_LINES))* 100 ),2)),'%') AS TEST_COVERAGE FROM FILE_STATS fs " +
-        "JOIN FILE_INFO fi ON fs.FILE_INFO_ID = fi.ID " +
-        "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
-        "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-        "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-        "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
-        "JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
-        "JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID " +
-        "WHERE pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? AND fi.REPOSITORY_NAME LIKE 'wso2/%' AND fi.FILE_NAME LIKE '%.java' AND pi.SUPPORT_JIRA NOT LIKE '%SECURITYINTERNAL%' AND pi.SUPPORT_JIRA NOT LIKE '%DEVINTERNAL%' " +
-        "GROUP BY p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME) as fileInfo " +
-        "WHERE (SELECT COUNT(*) FROM (SELECT p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME, COUNT(pi.ID) AS NO_OF_PATCHES FROM FILE_STATS fs " +
-        "JOIN FILE_INFO fi ON fs.FILE_INFO_ID = fi.ID " +
-        "JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID " +
-        "JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID " +
-        "JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID " +
-        "JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID " +
-        "JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID " +
-        "JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID " +
-        "WHERE pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? AND fi.REPOSITORY_NAME LIKE 'wso2/%' AND fi.FILE_NAME LIKE '%.java' AND pi.SUPPORT_JIRA NOT LIKE '%SECURITYINTERNAL%' AND pi.SUPPORT_JIRA NOT LIKE '%DEVINTERNAL%' " +
-        "GROUP BY p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME) as filterFileInfo " +
-        "WHERE filterFileInfo.PRODUCT_NAME = fileInfo.PRODUCT_NAME and filterFileInfo.NO_OF_PATCHES > fileInfo.NO_OF_PATCHES) <= 5) fileStats ON i.FILE_STATS_FILE_INFO_ID = fileStats.ID " +
-        "GROUP BY fileStats.PRODUCT_NAME, fileStats.ID, fileStats.FILE_NAME, fileStats.REPOSITORY_NAME " +
-        "ORDER BY " + sortColumn + " " + (sortDir == 1 ? "DESC" : "ASC") + " LIMIT " + pageSize + " OFFSET " + ((pageIndex - 1) * pageSize);
+    string dbQuery = PATCH_METRICS_GET_MOST_UPDATED_JAVA_CLASSES_INCLUDE_INTERNAL_PATCHES
+        + generatePaginationQuery(sortColumn, sortDir, pageIndex, pageSize);
 
-    io:println(dbQuery);
-    var dtReturned = patchMetricDB -> select(dbQuery, model:FileInfoWithStats, periodStartDateParam, periodEndDateParam, periodStartDateParam, periodEndDateParam);
+    var dtReturned = patchMetricDB -> select(dbQuery, model:FileInfoWithStats, periodStartDateParam, periodEndDateParam,
+        periodStartDateParam, periodEndDateParam);
 
     model:FileInfoWithStats[] fileInfoWithStatsList = [];
     match dtReturned {
@@ -1135,18 +928,60 @@ public function getMostModifiedJavaClasses(string startDate, string endDate, str
             while (dt.hasNext()) {
                 var rs = check <model:FileInfoWithStats>dt.getNext();
                 fileInfoWithStatsList[lengthof fileInfoWithStatsList] = rs;
-                //io:println(rs);
             }
         }
         error err => {
-
+            log:printErrorCause("Error occured while retrieving most modified java classes with statistics", err);
+            return err;
         }
     }
 
     return fileInfoWithStatsList;
 }
 
-public function getJavaClassWithDateRange(int id, string startDate, string endDate) returns model:FileInfoWithStats {
+documentation {Retrieve java class information with statistics according to file id and time period
+        P{{id }} Java class's file id
+        P{{startDate}} Time period start date
+        P{{endDate}} Time period end date
+        returns FileInfoWithStats object. If occur error then return Error.
+}
+public function getJavaClassWithDateRange(int id, string startDate, string endDate)
+    returns model:FileInfoWithStats|error {
+
+    log:printDebug("Retrieving java class with file id : " + id + " & time period");
+
+    sql:Parameter idParam = (sql:TYPE_INTEGER, id);
+    sql:Parameter periodStartDateParam = (sql:TYPE_DATE, startDate);
+    sql:Parameter periodEndDateParam = (sql:TYPE_DATE, endDate);
+
+    var dtReturned = patchMetricDB -> select(PATCH_METRICS_GET_JAVA_CLASS_WITH_TIME_PERIOD_INCLUDE_INTERNAL_PATCHES,
+        model:FileInfoWithStats, idParam,
+        periodStartDateParam, periodEndDateParam);
+
+    model:FileInfoWithStats javaClass;
+    match dtReturned {
+        table dt => {
+            while (dt.hasNext()) {
+                var rs = check <model:FileInfoWithStats>dt.getNext();
+                javaClass = rs;
+            }
+        }
+        error err => {
+            log:printErrorCause("Error occured while retrieving java class with statistics using id and time period", err);
+            return err;
+        }
+    }
+
+    return javaClass;
+}
+
+documentation {Retrieve java class information with statistics according to file id and time period
+        P{{id }} Java class's file id
+        P{{startDate}} Time period start date
+        P{{endDate}} Time period end date
+        returns FileInfoWithStats object. If occur error then return Error.
+}
+public function getJavaClass(int id, string startDate, string endDate) returns model:FileInfoWithStats|error {
 
     log:printDebug("Retrieving java class with file id : " + id);
 
@@ -1154,21 +989,8 @@ public function getJavaClassWithDateRange(int id, string startDate, string endDa
     sql:Parameter periodStartDateParam = (sql:TYPE_DATE, startDate);
     sql:Parameter periodEndDateParam = (sql:TYPE_DATE, endDate);
 
-    string dbQuery = "SELECT fileStats.*, COUNT(i.ID) AS NO_OF_ISSUES FROM (SELECT p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, DATE_FORMAT(fs.UPDATED_DATE, '%d-%m-%Y') AS UPDATED_DATE, fi.REPOSITORY_NAME, COUNT(pi.ID) AS NO_OF_PATCHES, SUM(fc.TOTAL_CHANGES) AS CHURNS, CONCAT(IF(fs.TEST_COVERED_LINES = 0 AND fs.TEST_MISSED_LINES = 0, 0, ROUND(((fs.TEST_COVERED_LINES/(fs.TEST_COVERED_LINES +  fs.TEST_MISSED_LINES))* 100 ),2)),'%') AS TEST_COVERAGE FROM FILE_STATS fs
-        JOIN FILE_INFO fi ON fs.FILE_INFO_ID = fi.ID
-        JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID
-        JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID
-        JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID
-        JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID
-        JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID
-        JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID
-        WHERE fi.ID = ? AND pi.REPORT_DATE >= ? AND pi.REPORT_DATE < ? AND fi.REPOSITORY_NAME LIKE 'wso2/%' AND fi.FILE_NAME LIKE '%.java' AND pi.SUPPORT_JIRA NOT LIKE '%SECURITYINTERNAL%' AND pi.SUPPORT_JIRA NOT LIKE '%DEVINTERNAL%'
-        GROUP BY p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME) fileStats
-        LEFT JOIN ISSUE i ON fileStats.ID = i.FILE_STATS_FILE_INFO_ID
-        GROUP BY fileStats.PRODUCT_NAME, fileStats.ID, fileStats.FILE_NAME, fileStats.REPOSITORY_NAME";
-
-    io:println(dbQuery);
-    var dtReturned = patchMetricDB -> select(dbQuery, model:FileInfoWithStats, idParam, periodStartDateParam, periodEndDateParam);
+    var dtReturned = patchMetricDB -> select(PATCH_METRICS_GET_JAVA_CLASS, model:FileInfoWithStats, idParam,
+        periodStartDateParam, periodEndDateParam);
 
     model:FileInfoWithStats javaClass;
     match dtReturned {
@@ -1176,65 +998,34 @@ public function getJavaClassWithDateRange(int id, string startDate, string endDa
             while (dt.hasNext()) {
                 var rs = check <model:FileInfoWithStats>dt.getNext();
                 javaClass = rs;
-                //io:println(rs);
             }
         }
         error err => {
-
+            log:printErrorCause("Error occured while retrieving java class with statistics using id", err);
+            return err;
         }
     }
 
     return javaClass;
 }
 
-public function getJavaClass(int id) returns model:FileInfoWithStats {
-
-    log:printDebug("Retrieving java class with file id : " + id);
-
-    sql:Parameter idParam = (sql:TYPE_INTEGER, id);
-
-    string dbQuery = "SELECT fileStats.*, COUNT(i.ID) AS NO_OF_ISSUES FROM (SELECT p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, DATE_FORMAT(fs.UPDATED_DATE, '%d-%m-%Y') AS UPDATED_DATE, fi.REPOSITORY_NAME, COUNT(pi.ID) AS NO_OF_PATCHES, SUM(fc.TOTAL_CHANGES) AS CHURNS, CONCAT(IF(fs.TEST_COVERED_LINES = 0 AND fs.TEST_MISSED_LINES = 0, 0, ROUND(((fs.TEST_COVERED_LINES/(fs.TEST_COVERED_LINES +  fs.TEST_MISSED_LINES))* 100 ),2)),'%') AS TEST_COVERAGE FROM FILE_STATS fs
-        JOIN FILE_INFO fi ON fs.FILE_INFO_ID = fi.ID
-        JOIN FILE_CHANGES fc ON fi.ID = fc.FILE_INFO_ID
-        JOIN GITHUB_COMMIT_INFO gci ON fc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID = gci.GITHUB_SHA_ID
-        JOIN PATCH_RELATED_COMMITS prc ON gci.GITHUB_SHA_ID = prc.GITHUB_COMMIT_INFO_GITHUB_SHA_ID
-        JOIN PATCH_INFO pi ON pi.ID = prc.PATCH_INFO_ID
-        JOIN PRODUCT_COMPONENT pc ON pc.ID = pi.PRODUCT_COMPONENT_ID
-        JOIN PRODUCT p ON p.ID = pc.PRODUCT_ID
-        WHERE fi.ID = ?
-        GROUP BY p.PRODUCT_NAME, fi.ID, fi.FILE_NAME, fi.REPOSITORY_NAME) fileStats
-        JOIN ISSUE i ON fileStats.ID = i.FILE_STATS_FILE_INFO_ID
-        GROUP BY fileStats.PRODUCT_NAME, fileStats.ID, fileStats.FILE_NAME, fileStats.REPOSITORY_NAME";
-
-    io:println(dbQuery);
-    var dtReturned = patchMetricDB -> select(dbQuery, model:FileInfoWithStats, idParam);
-
-    model:FileInfoWithStats javaClass;
-    match dtReturned {
-        table dt => {
-            while (dt.hasNext()) {
-                var rs = check <model:FileInfoWithStats>dt.getNext();
-                javaClass = rs;
-                //io:println(rs);
-            }
-        }
-        error err => {
-
-        }
-    }
-
-    return javaClass;
+documentation {Retrieve file issues. These issues are givrn by findbugs.
+        P{{fileId}} Java class file id
+        P{{sortColumn}} Records sorting property name
+        P{{sortDir}} Records sort direction
+        P{{pageIndex}} Retrieving page index
+        P{{pageSize}} Page size. No of records per page
+        returns Array of Issue object. If occur error then return Error.
 }
+public function getJavaClassIssuesFromDB(int fileId, string sortColumn, int sortDir, int pageIndex, int pageSize)
+    returns model:Issue[]|error {
 
-public function getJavaClassIssuesFromDB(int fileId, string sortColumn, int sortDir, int pageIndex, int pageSize) returns model:Issue[] {
-
-    log:printDebug("Retrieving issues in modified java class with file id : " + fileId);
+    log:printDebug("Retrieving issues in java class with file id : " + fileId);
 
     sql:Parameter idParam = (sql:TYPE_INTEGER, fileId);
 
-    string dbQuery = "SELECT * FROM ISSUE WHERE FILE_STATS_FILE_INFO_ID = ? ORDER BY " + sortColumn + " " + (sortDir == 1 ? "DESC" : "ASC") + " LIMIT " + pageSize + " OFFSET " + ((pageIndex - 1) * pageSize);
+    string dbQuery = PATCH_METRICS_GET_FILE_ISSUES + generatePaginationQuery(sortColumn, sortDir, pageIndex, pageSize);
 
-    io:println(dbQuery);
     var dtReturned = patchMetricDB -> select(dbQuery, model:Issue, idParam);
 
     model:Issue[] issueList = [];
@@ -1246,9 +1037,16 @@ public function getJavaClassIssuesFromDB(int fileId, string sortColumn, int sort
             }
         }
         error err => {
-
+            log:printErrorCause("Error occured while retrieving issues in java class", err);
+            return err;
         }
     }
 
     return issueList;
+}
+
+
+function generatePaginationQuery(string sortColumn, int sortDir, int pageIndex, int pageSize) returns string {
+    return
+        "ORDER BY " + sortColumn + " " + (sortDir == 1 ? "DESC" : "ASC") + " LIMIT " + pageSize + " OFFSET " + ((pageIndex - 1) * pageSize);
 }
