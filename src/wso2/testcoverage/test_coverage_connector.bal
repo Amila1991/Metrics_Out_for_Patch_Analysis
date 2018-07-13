@@ -1,29 +1,43 @@
+//
+// Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+//
+// WSO2 Inc. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package wso2.testcoverage;
 
 import ballerina/http;
 import ballerina/log;
 import ballerina/config;
-import ballerina/io;
 import ballerina/util;
 
-
 endpoint http:Client jacocoEndpoint {
-    targets:[{url:"https://localhost:8090",
+    targets:[{url: config:getAsString("testCoverage.service.url"),
         secureSocket:{
             keyStore:{
-                filePath:"/home/amila/Code/Metrics_Out_for_Patch_Analysis/resource/ballerinaKeystore.p12",
-                password:"ballerina"
+                filePath: config:getAsString("testCoverage.keyStore.path"),
+                password: config:getAsString("testCoverage.keyStore.password")
             }
         }
     }],
     auth:{
-        scheme:"basic",
-        username:"root",
-        password:"root"
+        scheme: config:getAsString("testCoverage.service.auth.schema"),
+        username: config:getAsString("testCoverage.service.user"),
+        password: config:getAsString("testCoverage.service.password")
     },
-    timeoutMillis:7200000
+    timeoutMillis:config:getAsInt("testCoverage.service.timeout")
 };
-
 
 public function getClassesTestCoverage(ClassTestCoverageRequestPayload[] classesList) returns ClassTestCoverageResponsePayload[] {
 
@@ -40,13 +54,9 @@ public function getClassesTestCoverage(ClassTestCoverageRequestPayload[] classes
         http:Response jacocoRes => {
             match jacocoRes.getJsonPayload(){
                 json load => {
-                    io:println(load.toString());
                     var jsonItems = check <json[]> load;
                     foreach item in jsonItems {
                         var responseItem = <ClassTestCoverageResponsePayload> item;
-                        io:println(item);
-                        io:println(responseItem);
-                        io:println("\n");
                         match responseItem{
                             ClassTestCoverageResponsePayload fileCoverage => {
                                 toReturn[lengthof toReturn] = fileCoverage;
@@ -57,7 +67,6 @@ public function getClassesTestCoverage(ClassTestCoverageRequestPayload[] classes
                         }
 
                     }
-                    // log:printInfo(load.toString());
                 }
                 http:PayloadError err => {
                     log:printErrorCause(err.message, err);
@@ -71,19 +80,13 @@ public function getClassesTestCoverage(ClassTestCoverageRequestPayload[] classes
     return toReturn;
 }
 
-
-
 public function getClassesSourceAsString(ClassTestCoverageRequestPayload classPayload) returns string {
-
-    io:println(classPayload);
 
     http:Request request = new;
     string requestPath = "/product-coverage-service/getSourceFile";
     log:printInfo("Requesting url from jacoco service " + requestPath + ".");
+
     json jsonObject = check <json>classPayload;
-    io:println(jsonObject);
-   // json payload = {sourceFileJson:jsonObject};
-   // io:println(payload);
     request.setJsonPayload(jsonObject);
     var jacoResponse = jacocoEndpoint -> post(untaint requestPath, request);
 
@@ -92,9 +95,7 @@ public function getClassesSourceAsString(ClassTestCoverageRequestPayload classPa
         http:Response jacocoRes => {
             match jacocoRes.getStringPayload(){
                 string load => {
-                    io:println("load : " +load);
                     toReturn = load;
-                    // log:printInfo(load.toString());
                 }
                 http:PayloadError err => {
                     log:printErrorCause(err.message, err);
@@ -107,67 +108,3 @@ public function getClassesSourceAsString(ClassTestCoverageRequestPayload classPa
     }
     return toReturn;
 }
-
-
-//
-//endpoint http:Client testCoverageEndpoint {
-//    url:"https://postman-echo.com"
-//};
-//
-//public function getClassesTestCoverage(ClassTestCoverageRequestPayload[] classesList) returns map {
-//
-//    http:Request req = new;
-//    json jsonObject = check <json>classesList;
-//
-//    req.setJsonPayload(jsonObject);
-//
-//    var response = testCoverageEndpoint -> post("/post", request = req);
-//
-//    map toReturn;
-//    match response {
-//        http:Response resp => {
-//            log:printInfo("\nPOST request:");
-//            var msg = resp.getJsonPayload();
-//            match msg {
-//                json jsonPayload => {
-//                    log:printInfo(jsonPayload.toString());
-//                    var jsonItems = check < json[]>jsonPayload;
-//                    foreach i, item in jsonItems {
-//                        toReturn[item.sourceFile] = item.lineCoverageData;
-//                    }
-//                }
-//                error err => {
-//                    log:printError(err.message, err = err);
-//                }
-//            }
-//        }
-//        error err => { log:printError(err.message, err = err); }
-//
-//    }
-//
-//    return toReturn;
-//}
-//
-//
-
-
-
-
-//"sourceFile":"org/wso2/carbon/apimgt/impl/dao/ApiMgtDAO.java",
-//"instructionCoverageData":{
-//"missedInstructions":"8584",
-//"coveredInstructions":"16304"
-//},
-//"branchCoverageData":{
-//"missedBranches":"709",
-//"coveredBranches":"851"
-//},
-//"lineCoverageData":{
-//"missedLines":"2052",
-//"coveredLines":"4583"
-//},
-//"methodCoverageData":{
-//"missedMethods":"45",
-//"coveredMethods":"230"
-//}
-//},
