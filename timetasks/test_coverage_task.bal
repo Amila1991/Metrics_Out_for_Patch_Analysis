@@ -37,9 +37,11 @@ public function testCoverageAppointment() {
 
 
 public function createTask() returns error? {
+    log:printInfo("Start processing file statistic");
     time:Time time = time:currentTime();
-    //int res = dao:clearFileIssues();    todo this comment want to uncomment before commit
+    int res = dao:clearFileIssues();    //todo this comment want to uncomment before commit
     getJavaClassesTestCoverage(time.format("yyyy-MM-dd"));
+    log:printInfo("Ended processing file statistic");
     return null;
 }
 

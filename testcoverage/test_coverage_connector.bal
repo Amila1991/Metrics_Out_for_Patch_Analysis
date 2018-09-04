@@ -25,6 +25,10 @@ endpoint http:Client jacocoEndpoint {
         keyStore: {
             path: config:getAsString("testCoverage.keyStore.path"),
             password: config:getAsString("testCoverage.keyStore.password")
+        },
+        trustStore: {
+            path: config:getAsString("testCoverage.trustStore.path"),
+            password: config:getAsString("testCoverage.trustStore.password")
         }
     }
     ,
