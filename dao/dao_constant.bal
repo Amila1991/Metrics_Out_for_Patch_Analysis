@@ -22,7 +22,7 @@
 @final string PMT_DB_PASSWORD = "pmt.database.password";
 @final string PMT_DB_MAX_POOL_SIZE = "pmt.dbConecntion.maximumPoolSize";
 @final string PMT_PATCH_RECORD_SELECT_QUERY = "SELECT pe.ID, pe.PATCH_NAME, pe.SVN_GIT_PUBLIC, pe.SVN_GIT_SUPPORT, pq.CLIENT, pq.SUPPORT_JIRA, pq.PRODUCT_NAME, pq.REPORT_DATE FROM " +
-    "PATCH_ETA pe JOIN PATCH_QUEUE pq ON pq.ID = pe.PATCH_QUEUE_ID WHERE pe.ID > ? AND pe.LC_STATE LIKE 'Released%'";
+    "PATCH_ETA pe JOIN PATCH_QUEUE pq ON pq.ID = pe.PATCH_QUEUE_ID WHERE pe.ID > ? AND (pe.LC_STATE LIKE 'Released%' OR (pe.RELEASED_ON IS NOT NULL OR pe.RELEASED_NOT_AUTOMATED_ON IS NOT NULL OR pe.RELEASED_NOT_IN_PUBLIC_SVN_ON IS NOT NULL))";
 
 
 @final string PATCH_METRICS_DB_HOST = "patch.mertics.database.host";
