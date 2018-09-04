@@ -21,27 +21,14 @@ import ballerina/config;
 import ballerina/log;
 import model as model;
 
-
-
-//endpoint mysql:Client pmtDB {
-//    host: config:getAsString(PMT_DB_HOST),
-//    port: config:getAsInt(PMT_DB_PORT),
-//    name: config:getAsString(PMT_DB_NAME),
-//    username: config:getAsString(PMT_DB_USER),
-//    password:config:getAsString(PMT_DB_PASSWORD),
-//    poolOptions:{maximumPoolSize: config:getAsInt(PMT_DB_MAX_POOL_SIZE)},
-//    dbOptions:{useSSL:false}
-//};
-
-
 endpoint mysql:Client pmtDB {
-    host: "localhost",
-    port: 3306,
-    name: "pmtdb",
-    username: "root",
-    password: "password123",
-    poolOptions: { maximumPoolSize: 5 },
-    dbOptions: { useSSL: false }
+    host: config:getAsString(PMT_DB_HOST),
+    port: config:getAsInt(PMT_DB_PORT),
+    name: config:getAsString(PMT_DB_NAME),
+    username: config:getAsString(PMT_DB_USER),
+    password:config:getAsString(PMT_DB_PASSWORD),
+    poolOptions:{maximumPoolSize: config:getAsInt(PMT_DB_MAX_POOL_SIZE)},
+    dbOptions:{useSSL:false}
 };
 
 documentation {Retrieve patches from Patch ETA and Patch Queue records.

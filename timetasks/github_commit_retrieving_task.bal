@@ -22,7 +22,6 @@ import ballerina/config;
 import ballerina/time;
 import ballerina/runtime;
 import ballerina/log;
-import ballerina/io;
 import model;
 
 endpoint github:Client githubClient {
@@ -78,7 +77,6 @@ function retrieveGithubCommit() returns (error?) {
                         //        return repository.owner.contains(WSO2);
                         //    });
                         repo = validateWSO2RepositoryOnwer(gitRepos);
-                        io:println(repo);
                     }
                     github:GitHubError err => {
                         log:printError("Error ocurred while calling Github commit searching API for public repository",
@@ -100,7 +98,6 @@ function retrieveGithubCommit() returns (error?) {
                             //        return repository.owner.contains(WSO2);
                             //    });
                             repo = validateWSO2RepositoryOnwer(gitRepos);
-                            io:println(repo);
                         }
                         github:GitHubError err => {
                             log:printError("Error ocurred while calling Github PR API for public repository", err = err)
@@ -122,7 +119,6 @@ function retrieveGithubCommit() returns (error?) {
                         //        return repository.owner.contains(WSO2);
                         //    });
                         repo = validateWSO2RepositoryOnwer(gitRepos);
-                        io:println(repo);
                     }
                     github:GitHubError err => {
                         log:printError("Error ocurred while calling Github PR API for support repository", err = err);
@@ -143,7 +139,6 @@ function retrieveGithubCommit() returns (error?) {
                             //        return repository.owner.contains(WSO2);
                             //    });
                             repo = validateWSO2RepositoryOnwer(gitRepos);
-                            io:println(repo);
                         }
                         github:GitHubError err => {
                             log:printError(
@@ -243,6 +238,7 @@ function retrieveGithubCommit() returns (error?) {
         res = dao:insertGithubCommitFileInfo(commitFileList);
         githubCommitInfoList = dao:getIncompleteGithubCommitInfo();
     }
+    log:printInfo("Ended retrieving github commit information");
 
     return null;
 }
@@ -261,10 +257,9 @@ function validateWSO2RepositoryOnwer(github:GitHubRepository[] gitRepos) returns
     if (lengthof wso2RepostoryOnwers == 0) {
         wso2RepostoryOnwers = config:getAsString(WSO2_REPOSITORY_OWNERS).split(",");
     }
-    io:println(wso2RepostoryOnwers);
+
     foreach repo in gitRepos {
         foreach onwer in wso2RepostoryOnwers {
-            io:println(onwer + " " + repo.owner);
             if (repo.owner.equalsIgnoreCase(onwer)) {
                 returnRepos[lengthof returnRepos] = repo;
                 break;
