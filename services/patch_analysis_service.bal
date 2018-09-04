@@ -17,6 +17,7 @@
 
 import ballerina/http;
 import ballerina/log;
+import ballerina/config;
 import dao;
 import model;
 import testcoverage;
@@ -30,15 +31,29 @@ import testcoverage;
 };
 
 documentation {Attributes associated with the service endpoint is defined here.}
-endpoint http:Listener patchMetricsEP {
-    port:9090
+endpoint http:SecureListener patchMetricsEP {
+    port: config:getAsInt("patch.analysis.service.port"),
+    secureSocket: {
+        keyStore: {
+            path: config:getAsString("patch.analysis.service.keyStore.path"), //"/home/amila/Code/WSO2_Completed_Patch_Analysis/resource/ballerinaKeystore.p12",
+            password: config:getAsString("patch.analysis.service.keyStore.password")
+        },
+        trustStore: {
+            path: config:getAsString("patch.analysis.service.trustStore.path"),
+            password: config:getAsString("patch.analysis.service.trustStore.password")
+        },
+        sslVerifyClient: "require"
+    }
 };
 
 
 @http:ServiceConfig {
-    endpoints:[patchMetricsEP],
     basePath:"/repository",
-    cors: SERVICES_CORS_PARAMS
+    cors: SERVICES_CORS_PARAMS,
+    authConfig: {
+        authentication: { enabled: true },
+        scopes: ["scope2"]
+    }
 }
 service<http:Service> repositoryService bind patchMetricsEP {
     @http:ResourceConfig {
@@ -60,9 +75,10 @@ service<http:Service> repositoryService bind patchMetricsEP {
                 res.setJsonPayload(jsonResponse);
             }
             error err => {
-                log:printError("Retrieving repositories information failed", err = err);
+                log:printError("Falied to retrieve repositories information", err = err);
+                json errResponse = { responseType: "error", message: "Falied to retrieve repositories information"};
                 res.statusCode = 500;
-                res.setPayload(err.message);
+                res.setJsonPayload(errResponse);
             }
         }
 
@@ -88,9 +104,10 @@ service<http:Service> repositoryService bind patchMetricsEP {
                 res.setJsonPayload(jsonResponse);
             }
             error err => {
-                log:printError("Retrieving repositories information by product failed", err = err);
+                log:printError("Failed to retrieve repositories information by product", err = err);
+                json errResponse = { responseType: "error", message: "Failed to retrieve repositories information by product"};
                 res.statusCode = 500;
-                res.setPayload(err.message);
+                res.setJsonPayload(errResponse);
             }
         }
 
@@ -100,7 +117,6 @@ service<http:Service> repositoryService bind patchMetricsEP {
 
 
 @http:ServiceConfig {
-    endpoints:[patchMetricsEP],
     basePath:"/product",
     cors: SERVICES_CORS_PARAMS
 }
@@ -123,9 +139,10 @@ service<http:Service> productService bind patchMetricsEP {
                 res.setJsonPayload(jsonResponse);
             }
             error err => {
-                log:printError("Retrieving products information failed", err = err);
+                log:printError("Failed to Retrieve products information", err = err);
+                json errResponse = { responseType: "error", message: "Failed to Retrieve products information"};
                 res.statusCode = 500;
-                res.setPayload(err.message);
+                res.setJsonPayload(errResponse);
             }
         }
 
@@ -135,7 +152,6 @@ service<http:Service> productService bind patchMetricsEP {
 
 
 @http:ServiceConfig {
-    endpoints:[patchMetricsEP],
     basePath:"/patch",
     cors: SERVICES_CORS_PARAMS
 }
@@ -158,9 +174,10 @@ service<http:Service> patcheSrvice bind patchMetricsEP {
                 res.setJsonPayload(jsonResponse);
             }
             error err => {
-                log:printError("Retrieving patches information failed", err = err);
+                log:printError("Failed to retrieve patches information", err = err);
+                json errResponse = { responseType: "error", message: "Failed to retrieve patches information"};
                 res.statusCode = 500;
-                res.setPayload(err.message);
+                res.setJsonPayload(errResponse);
             }
         }
 
@@ -185,9 +202,10 @@ service<http:Service> patcheSrvice bind patchMetricsEP {
                 res.setJsonPayload(jsonResponse);
             }
             error err => {
-                log:printError("Retrieving patches information by product failed", err = err);
+                log:printError("Failed to retrieve patches information by product", err = err);
+                json errResponse = { responseType: "error", message: "Failed to retrieve patches information by product"};
                 res.statusCode = 500;
-                res.setPayload(err.message);
+                res.setJsonPayload(errResponse);
             }
         }
 
@@ -214,9 +232,10 @@ service<http:Service> patcheSrvice bind patchMetricsEP {
                 res.setJsonPayload(jsonResponse);
             }
             error err => {
-                log:printError("Retrieving patches information by repository failed", err = err);
+                log:printError("Failed to retrieve patches information by repository", err = err);
+                json errResponse = { responseType: "error", message: "Failed to retrieve patches information by repository"};
                 res.statusCode = 500;
-                res.setPayload(err.message);
+                res.setJsonPayload(errResponse);
             }
         }
 
@@ -241,9 +260,10 @@ service<http:Service> patcheSrvice bind patchMetricsEP {
                 res.setJsonPayload(jsonResponse);
             }
             error err => {
-                log:printError("Retrieving patch information failed", err = err);
+                log:printError("Failed to retrieve patch information", err = err);
+                json errResponse = { responseType: "error", message: "Failed to retrieve patch information"};
                 res.statusCode = 500;
-                res.setPayload(err.message);
+                res.setJsonPayload(errResponse);
             }
         }
         _ = conn -> respond(res);
@@ -252,7 +272,6 @@ service<http:Service> patcheSrvice bind patchMetricsEP {
 
 
 @http:ServiceConfig {
-    endpoints:[patchMetricsEP],
     basePath:"/file",
     cors: SERVICES_CORS_PARAMS
 }
@@ -278,9 +297,10 @@ service<http:Service> fileService bind patchMetricsEP {
                 res.setJsonPayload(jsonResponse);
             }
             error err => {
-                log:printError("Retrieving files information with statistics by repository failed", err = err);
+                log:printError("Failed to retrieve files information with statistics by repository", err = err);
+                json errResponse = { responseType: "error", message: "Failed to retrieve files information with statistics by repository"};
                 res.statusCode = 500;
-                res.setPayload(err.message);
+                res.setJsonPayload(errResponse);
             }
         }
 
@@ -305,9 +325,10 @@ service<http:Service> fileService bind patchMetricsEP {
                 res.setJsonPayload(jsonResponse);
             }
             error err => {
-                log:printError("Retrieving files information with statistics by patch failed", err = err);
+                log:printError("Failed to retrieve files information with statistics by patch", err = err);
+                json errResponse = { responseType: "error", message: "Failed to retrieve files information with statistics by patch"};
                 res.statusCode = 500;
-                res.setPayload(err.message);
+                res.setJsonPayload(errResponse);
             }
         }
 
@@ -332,9 +353,10 @@ service<http:Service> fileService bind patchMetricsEP {
                 res.setJsonPayload(jsonResponse);
             }
             error err => {
-                log:printError("Retrieving most updated java classes with statistics by patch failed", err = err);
+                log:printError("Failed to retrieve most updated java classes with statistics by patch", err = err);
+                json errResponse = { responseType: "error", message: "Failed to retrieve most updated java classes with statistics by patch"};
                 res.statusCode = 500;
-                res.setPayload(err.message);
+                res.setJsonPayload(errResponse);
             }
         }
 
@@ -362,9 +384,10 @@ service<http:Service> fileService bind patchMetricsEP {
                 res.setJsonPayload(jsonResponse);
             }
             error err => {
-                log:printError("Retrieving java class with statistics failed", err = err);
+                log:printError("Failed to retrieve java class with statistics", err = err);
+                json errResponse = { responseType: "error", message: "Failed to retrieve java class with statistics"};
                 res.statusCode = 500;
-                res.setPayload(err.message);
+                res.setJsonPayload(errResponse);
             }
         }
 
@@ -391,9 +414,10 @@ service<http:Service> fileService bind patchMetricsEP {
                 res.setJsonPayload(jsonResponse);
             }
             error err => {
-                log:printError("Retrieving java class with statistics failed", err = err);
+                log:printError("Failed to retrieve java class with statistics (For patches)", err = err);
+                json errResponse = { responseType: "error", message: "Failed to retrieve java class with statistics (For patches)"};
                 res.statusCode = 500;
-                res.setPayload(err.message);
+                res.setJsonPayload(errResponse);
             }
         }
 
@@ -418,9 +442,10 @@ service<http:Service> fileService bind patchMetricsEP {
                 res.setJsonPayload(jsonResponse);
             }
             error err => {
-                log:printError("Retrieving issues in given java class failed", err = err);
+                log:printError("Failed to retrieve issues in given java class", err = err);
+                json errResponse = { responseType: "error", message: "Failed to retrieve issues in given java class"};
                 res.statusCode = 500;
-                res.setPayload(err.message);
+                res.setJsonPayload(errResponse);
             }
         }
 
@@ -443,16 +468,16 @@ service<http:Service> fileService bind patchMetricsEP {
                 res.setTextPayload(source);
             }
             error err => {
-                log:printError("Retrieving java class source failed", err = err);
+                log:printError("Failed to retrieve java class source", err = err);
+
+                json errResponse = { responseType: "error", message: "Failed to retrieve java class source"};
                 res.statusCode = 500;
-                res.setPayload(err.message);
+                res.setJsonPayload(errResponse);
             }
         }
 
         _ = conn -> respond(res);
     }
-
-
 }
 
 function getFileSource(int id) returns string|error {
